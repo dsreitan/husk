@@ -1,3 +1,4 @@
-// since there's no dynamic data here, we can prerender
-// it so that it gets served as a static asset in production
-export const prerender = true;
+// Dynamic, user-specific & realtime data -> don't prerender
+export const prerender = false;
+
+// (Optionally we could add a load function later for SSR of initial lists.)

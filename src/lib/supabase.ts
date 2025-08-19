@@ -63,6 +63,10 @@ create policy "owners and members can view"
     where m.list_id = lists.id and m.user_id = auth.uid()
   ));
 
+   OR (EXISTS ( SELECT 1
+   FROM list_members m
+  WHERE ((m.list_id = lists.id) AND (m.user_id = auth.uid())))))
+
 create policy "owners can insert"
   on lists for insert
   with check (auth.uid() = owner);

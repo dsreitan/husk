@@ -14,12 +14,20 @@
   let newTask = '';
   let error = '';
   let channel: ReturnType<typeof supabase.channel> | null = null;
+  // --- invite state ---
+  let ownerId: string | null = null;
+  let inviteUserId = '';
+  let inviting = false;
+  let inviteMsg = '';
+  // --- end invite state ---
+  let realtimeStatus: string = '';
 
   async function loadList() {
     error = '';
     const { data, error: err } = await supabase.from('lists').select('*').eq('id', listId).single();
     if (err) { error = err.message; return; }
     listName = data.name;
+    ownerId = data.owner;
   }
 
   async function loadTodos() {
@@ -37,7 +45,7 @@
   async function addTodo() {
     const task = newTask.trim();
     if (!task || adding) return;
-  adding = true; error = '';
+    adding = true; error = '';
     const tempId = crypto.randomUUID();
     const optimistic = { id: tempId, list_id: listId, task, completed: false, inserted_at: new Date().toISOString(), _pending: true };
     todos = [optimistic, ...todos];
@@ -62,28 +70,47 @@
     }
   }
 
-  function setupRealtime() {
-    if (channel) supabase.removeChannel(channel);
+  // --- enhanced realtime ---
+  function applyChange(payload: any) {
+    if (payload.eventType === 'INSERT') {
+      const row = payload.new as any;
+      if (!todos.find(t => t.id === row.id)) todos = [row, ...todos];
+    } else if (payload.eventType === 'UPDATE') {
+      const row = payload.new as any;
+      todos = todos.map(t => t.id === row.id ? row : t);
+    } else if (payload.eventType === 'DELETE') {
+      const row = payload.old as any;
+      todos = todos.filter(t => t.id !== row.id);
+    }
+  }
+  async function setupRealtime() {
+    if (!listId) return;
+    if (channel) {
+      supabase.removeChannel(channel);
+      channel = null;
+    }
+    realtimeStatus = 'subscribing';
     channel = supabase
       .channel(`todos-${listId}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'todos', filter: `list_id=eq.${listId}` }, (payload) => {
-        if (payload.eventType === 'INSERT') {
-          const row = payload.new as any;
-          if (!todos.find(t => t.id === row.id)) todos = [row, ...todos];
-        } else if (payload.eventType === 'UPDATE') {
-          const row = payload.new as any;
-          todos = todos.map(t => t.id === row.id ? row : t);
-        } else if (payload.eventType === 'DELETE') {
-          const row = payload.old as any;
-          todos = todos.filter(t => t.id !== row.id);
-        }
-      })
-      .subscribe();
-  }
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'todos', filter: `list_id=eq.${listId}` }, applyChange);
 
-  function ensureAuth() {
-    if (!get(user)) goto('/');
+    // Wait for status
+    await new Promise<void>((resolve) => {
+      channel!.subscribe((status) => {
+        realtimeStatus = status;
+        if (status === 'SUBSCRIBED') resolve();
+        if (status === 'CHANNEL_ERROR' || status === 'CLOSED') resolve();
+      });
+    });
   }
+  // --- end enhanced realtime ---
+
+  function ensureAuth() { if (!get(user)) goto('/'); }
+
+  const unsubscribeUser = user.subscribe(u => {
+    // re-auth channel if token changes (user login/logout)
+    if (channel) setupRealtime();
+  });
 
   onMount(() => {
     listId = ($page.params.id || '') as string;
@@ -91,8 +118,28 @@
     loadList();
     loadTodos();
     setupRealtime();
-    return () => { if (channel) supabase.removeChannel(channel); };
+    window.addEventListener('focus', refetchOnFocus);
+    return () => { if (channel) supabase.removeChannel(channel); unsubscribeUser(); window.removeEventListener('focus', refetchOnFocus); };
   });
+
+  function refetchOnFocus() {
+    // Light resync to catch any missed events (e.g., tab was asleep)
+    loadTodos();
+  }
+
+  async function invite() {
+    inviteMsg='';
+    const id = inviteUserId.trim();
+    if (!id || inviting) return;
+    inviting = true;
+    try {
+      const { error: err } = await supabase.from('list_members').insert({ list_id: listId, user_id: id, role: 'viewer' });
+      if (err) inviteMsg = err.message; else { inviteMsg = 'Invited'; inviteUserId=''; }
+    } catch (e:any) {
+      inviteMsg = e.message || 'Invite failed';
+    }
+    inviting = false;
+  }
 </script>
 
 <svelte:head><title>{listName ? listName + ' – Todos' : 'List'} </title></svelte:head>
@@ -100,6 +147,13 @@
 <div class="list-page">
   <nav class="crumbs"><a href="/">← Lists</a></nav>
   <h1>{listName || '...'}</h1>
+  {#if ownerId && get(user)?.id === ownerId}
+    <form class="invite" on:submit|preventDefault={invite}>
+      <input placeholder="User ID" bind:value={inviteUserId} aria-label="User ID to invite" />
+      <button type="submit" disabled={!inviteUserId.trim() || inviting}>{inviting ? 'Inviting…' : 'Invite'}</button>
+    </form>
+    {#if inviteMsg}<p class="invite-msg">{inviteMsg}</p>{/if}
+  {/if}
   <form class="add" on:submit|preventDefault={addTodo}>
     <input placeholder="New todo" bind:value={newTask} aria-label="New todo" />
     <button type="submit" disabled={!newTask.trim() || adding}>{adding ? 'Adding…' : 'Add'}</button>
@@ -127,13 +181,14 @@
 <style>
   .list-page { max-width: 42rem; margin: 0 auto; display: flex; flex-direction: column; gap: 1rem; }
   .crumbs a { text-decoration: none; font-size: .85rem; }
-  form.add { display: flex; gap: .5rem; }
-  form.add input { flex:1; padding:.55rem .7rem; border:1px solid #bbb; border-radius:4px; }
-  form.add button { padding:.55rem .9rem; border-radius:4px; border:1px solid var(--color-theme-1,#ff3e00); background: var(--color-theme-1,#ff3e00); color:#fff; font-weight:600; }
+  form.add, form.invite { display: flex; gap: .5rem; }
+  form.add input, form.invite input { flex:1; padding:.55rem .7rem; border:1px solid #bbb; border-radius:4px; }
+  form.add button, form.invite button { padding:.55rem .9rem; border-radius:4px; border:1px solid var(--color-theme-1,#ff3e00); background: var(--color-theme-1,#ff3e00); color:#fff; font-weight:600; }
   ul.todos { list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap:.4rem; }
   ul.todos li { display:flex; align-items:center; gap:.6rem; padding:.5rem .6rem; border:1px solid #ddd; border-radius:6px; cursor:pointer; background:#fff; }
   ul.todos li.completed { opacity:.65; text-decoration: line-through; }
   ul.todos li input { pointer-events:none; }
   .error { color:#d00; }
   .pending { font-size:.75rem; color:#888; margin-left:.25rem; }
+  .invite-msg { font-size:.75rem; color:#555; margin-top:-.5rem; }
 </style>

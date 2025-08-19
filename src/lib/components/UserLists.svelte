@@ -10,6 +10,7 @@
         owner: string;
         name: string;
         created_at: string;
+        todo_count?: number;
     };
 
     let lists: List[] = [];
@@ -30,15 +31,31 @@
         error = "";
         const { data, error: err } = await supabase
             .from("lists")
-            .select("*")
+            .select("id,owner,name,created_at")
             .order("created_at", { ascending: false });
         if (err) {
             error = err.message;
         } else {
-            lists = (data as List[]) || [];
+            lists = (data as any[] || []).map(row => ({ ...row, todo_count: 0 }));
+            await loadCounts();
         }
         loading = false;
         initialized = true;
+    }
+
+    async function loadCounts() {
+        if (lists.length === 0) return;
+        const ids = lists.map(l => l.id);
+        const { data, error: err } = await supabase
+            .from('todos')
+            .select('list_id')
+            .in('list_id', ids);
+        if (err) return;
+        const counts: Record<string, number> = {};
+        for (const row of data as any[]) {
+            counts[row.list_id] = (counts[row.list_id] || 0) + 1;
+        }
+        lists = lists.map(l => ({ ...l, todo_count: counts[l.id] || 0 }));
     }
 
     async function setupRealtime() {
@@ -50,36 +67,45 @@
             channel = null;
         }
         // Narrow filter to this user's owned lists
-        channel = supabase
-            .channel("lists-realtime")
-            .on(
-                "postgres_changes",
-                { event: "*", schema: "public", table: "lists" },
-                async (payload) => {
-                    try {
-                        if (payload.eventType === "INSERT") {
-                            const newList = payload.new as List;
-                            if (!lists.find((l) => l.id === newList.id))
-                                lists = [newList, ...lists];
-                            if (lists.length === 0) await loadLists();
-                        } else if (payload.eventType === "UPDATE") {
-                            const updated = payload.new as List;
-                            let found = false;
-                            lists = lists.map((l) =>
-                                l.id === updated.id
-                                    ? ((found = true), updated)
-                                    : l,
-                            );
-                            if (!found) await loadLists();
-                        } else if (payload.eventType === "DELETE") {
-                            const deleted = payload.old as List;
-                            lists = lists.filter((l) => l.id !== deleted.id);
-                        }
-                    } catch (e) {
-                        console.error("[lists realtime handler error]", e);
+        channel = supabase.channel("lists-realtime")
+            // List changes
+            .on("postgres_changes", { event: "*", schema: "public", table: "lists" }, async (payload) => {
+                try {
+                    if (payload.eventType === "INSERT") {
+                        const newList = { ...(payload.new as any), todo_count: 0 } as List;
+                        if (!lists.find(l => l.id === newList.id)) lists = [newList, ...lists];
+                    } else if (payload.eventType === "UPDATE") {
+                        const updatedRaw = payload.new as any;
+                        lists = lists.map(l => l.id === updatedRaw.id ? { ...l, ...updatedRaw } : l);
+                    } else if (payload.eventType === "DELETE") {
+                        const deleted = payload.old as any;
+                        lists = lists.filter(l => l.id !== deleted.id);
                     }
-                },
-            );
+                } catch {}
+            })
+            // Todo changes for counts
+            .on("postgres_changes", { event: "*", schema: "public", table: "todos" }, (payload) => {
+                try {
+                    if (payload.eventType === 'INSERT') {
+                        const row = payload.new as any;
+                        lists = lists.map(l => l.id === row.list_id ? { ...l, todo_count: (l.todo_count || 0) + 1 } : l);
+                    } else if (payload.eventType === 'DELETE') {
+                        const row = payload.old as any;
+                        lists = lists.map(l => l.id === row.list_id ? { ...l, todo_count: Math.max(0, (l.todo_count || 0) - 1) } : l);
+                    } else if (payload.eventType === 'UPDATE') {
+                        const oldRow = payload.old as any;
+                        const newRow = payload.new as any;
+                        if (oldRow.list_id !== newRow.list_id) {
+                            // Moved between lists
+                            lists = lists.map(l => {
+                                if (l.id === oldRow.list_id) return { ...l, todo_count: Math.max(0, (l.todo_count || 0) - 1) };
+                                if (l.id === newRow.list_id) return { ...l, todo_count: (l.todo_count || 0) + 1 };
+                                return l;
+                            });
+                        }
+                    }
+                } catch {}
+            });
 
         // Subscribe and await status transition using a small promise helper
     const subscribed = await new Promise<boolean>((resolve) => {
@@ -125,16 +151,16 @@
     {:else if lists.length === 0}
         <p>No lists yet.</p>
     {:else}
-                <ul class="lists" aria-live="polite">
-                        {#each lists as list (list.id)}
-                                <li>
-                                    <a class="row" href={`/lists/${list.id}`}>
-                                        <span class="name">{list.name}</span>
-                                        <time datetime={list.created_at}>{new Date(list.created_at).toLocaleString()}</time>
-                                    </a>
-                                </li>
-                        {/each}
-                </ul>
+        <ul class="lists" aria-live="polite">
+            {#each lists as list (list.id)}
+                <li>
+                    <a class="row" href={`/lists/${list.id}`}>
+                        <span class="name">{list.name}</span>
+                        <span class="count">{list.todo_count ?? 0} { (list.todo_count ?? 0) === 1 ? 'todo' : 'todos' }</span>
+                    </a>
+                </li>
+            {/each}
+        </ul>
     {/if}
 </div>
 
@@ -153,6 +179,7 @@
     }
     .lists li { padding:0; }
     .lists li .row { display:flex; justify-content:space-between; align-items:center; padding:0.6rem 0.75rem; border:1px solid #ccc; border-radius:6px; text-decoration:none; color:inherit; }
+    .lists li .row .count { font-size:.8rem; opacity:.75; }
     .lists li .row:hover { background:#fafafa; }
     .name {
         font-weight: 500;

@@ -2,6 +2,7 @@
   import { supabase } from '$lib/supabase';
   import { user } from '$lib/stores/user';
   import { get } from 'svelte/store';
+  import { goto } from '$app/navigation';
 
   let name = '';
   let error = '';
@@ -16,11 +17,12 @@
     }
     if (!name.trim()) return;
     loading = true;
-    const { error: err } = await supabase.from('lists').insert({ name: name.trim(), owner: currentUser.id });
+    const { data, error: err } = await supabase.from('lists').insert({ name: name.trim(), owner: currentUser.id }).select().single();
     if (err) {
       error = err.message;
-    } else {
+    } else if (data) {
       name = '';
+      goto(`/lists/${data.id}`);
     }
     loading = false;
   }

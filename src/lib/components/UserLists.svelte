@@ -46,23 +46,16 @@
         const currentUser = get(user);
         if (!currentUser) return;
         if (channel) {
-            console.debug("[lists] removing previous channel");
             supabase.removeChannel(channel);
             channel = null;
         }
-        console.debug("[lists] creating channel");
-        // Narrow filter to this user's owned lists; if you also want shared lists via membership, add another subscription later
+        // Narrow filter to this user's owned lists
         channel = supabase
             .channel("lists-realtime")
             .on(
                 "postgres_changes",
                 { event: "*", schema: "public", table: "lists" },
                 async (payload) => {
-                    console.debug(
-                        "[lists realtime event]",
-                        payload.eventType,
-                        payload,
-                    );
                     try {
                         if (payload.eventType === "INSERT") {
                             const newList = payload.new as List;
@@ -89,18 +82,14 @@
             );
 
         // Subscribe and await status transition using a small promise helper
-        const subscribed = await new Promise<boolean>((resolve) => {
+    const subscribed = await new Promise<boolean>((resolve) => {
             channel!.subscribe((status) => {
-                console.debug("[lists channel status]", status);
                 if (status === "SUBSCRIBED") resolve(true);
                 else if (status === "CHANNEL_ERROR" || status === "CLOSED")
                     resolve(false);
             });
         });
-        if (!subscribed) {
-            console.error("[lists] failed to subscribe realtime channel");
-            return;
-        }
+    if (!subscribed) return;
         // After successful subscribe ensure data is fresh
         await loadLists();
     }
@@ -117,9 +106,7 @@
     onMount(() => {
         loadLists();
 
-        if (get(user)) void setupRealtime();
-        // Expose for quick manual retry in console
-        if (browser) (window as any).debugListsResub = setupRealtime;
+    if (get(user)) void setupRealtime();
         return () => {
             unsubscribe();
             if (channel) supabase.removeChannel(channel);
@@ -138,16 +125,16 @@
     {:else if lists.length === 0}
         <p>No lists yet.</p>
     {:else}
-        <ul class="lists" aria-live="polite">
-            {#each lists as list (list.id)}
-                <li>
-                    <span class="name">{list.name}</span>
-                    <time datetime={list.created_at}
-                        >{new Date(list.created_at).toLocaleString()}</time
-                    >
-                </li>
-            {/each}
-        </ul>
+                <ul class="lists" aria-live="polite">
+                        {#each lists as list (list.id)}
+                                <li>
+                                    <a class="row" href={`/lists/${list.id}`}>
+                                        <span class="name">{list.name}</span>
+                                        <time datetime={list.created_at}>{new Date(list.created_at).toLocaleString()}</time>
+                                    </a>
+                                </li>
+                        {/each}
+                </ul>
     {/if}
 </div>
 
@@ -164,14 +151,9 @@
         flex-direction: column;
         gap: 0.5rem;
     }
-    .lists li {
-        padding: 0.6rem 0.75rem;
-        border: 1px solid #ccc;
-        border-radius: 6px;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-    }
+    .lists li { padding:0; }
+    .lists li .row { display:flex; justify-content:space-between; align-items:center; padding:0.6rem 0.75rem; border:1px solid #ccc; border-radius:6px; text-decoration:none; color:inherit; }
+    .lists li .row:hover { background:#fafafa; }
     .name {
         font-weight: 500;
     }

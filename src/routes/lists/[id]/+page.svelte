@@ -16,7 +16,7 @@
   let channel: ReturnType<typeof supabase.channel> | null = null;
   // --- invite state ---
   let ownerId: string | null = null;
-  let inviteUserId = '';
+  let inviteUserEmail = '';
   let inviting = false;
   let inviteMsg = '';
   // --- end invite state ---
@@ -128,14 +128,27 @@
   }
 
   async function invite() {
-    inviteMsg='';
-    const id = inviteUserId.trim();
-    if (!id || inviting) return;
+    inviteMsg = '';
+    const email = inviteUserEmail.trim().toLowerCase();
+    if (!email || inviting) return;
     inviting = true;
     try {
-      const { error: err } = await supabase.from('list_members').insert({ list_id: listId, user_id: id, role: 'viewer' });
-      if (err) inviteMsg = err.message; else { inviteMsg = 'Invited'; inviteUserId=''; }
-    } catch (e:any) {
+      const { data } = await supabase.auth.getSession();
+      const accessToken = data.session?.access_token;
+      const res = await fetch(`/lists/${listId}/invite`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(accessToken ? { 'Authorization': `Bearer ${accessToken}` } : {})
+        },
+        body: JSON.stringify({ email, role: 'viewer' })
+      });
+      const result = await res.json();
+      if (!res.ok) inviteMsg = result.error || 'Invite failed';
+      else if (result.message) inviteMsg = result.message;
+      else inviteMsg = 'Invited';
+      if (res.ok) inviteUserEmail = '';
+    } catch (e: any) {
       inviteMsg = e.message || 'Invite failed';
     }
     inviting = false;
@@ -149,8 +162,8 @@
   <h1>{listName || '...'}</h1>
   {#if ownerId && get(user)?.id === ownerId}
     <form class="invite" on:submit|preventDefault={invite}>
-      <input placeholder="User ID" bind:value={inviteUserId} aria-label="User ID to invite" />
-      <button type="submit" disabled={!inviteUserId.trim() || inviting}>{inviting ? 'Inviting…' : 'Invite'}</button>
+      <input type="email" placeholder="User email" bind:value={inviteUserEmail} aria-label="User email to invite" />
+      <button type="submit" disabled={!inviteUserEmail.trim() || inviting}>{inviting ? 'Inviting…' : 'Invite'}</button>
     </form>
     {#if inviteMsg}<p class="invite-msg">{inviteMsg}</p>{/if}
   {/if}

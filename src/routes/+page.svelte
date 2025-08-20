@@ -1,10 +1,10 @@
 <script lang="ts">
-	import welcome from '$lib/images/svelte-welcome.webp';
-	import welcomeFallback from '$lib/images/svelte-welcome.png';
-	import UserLists from '$lib/components/UserLists.svelte';
-	import CreateList from '$lib/components/CreateList.svelte';
-	import LoginForm from '$lib/components/LoginForm.svelte';
-	import { user } from '$lib/stores/user';
+	import welcome from "$lib/images/svelte-welcome.webp";
+	import welcomeFallback from "$lib/images/svelte-welcome.png";
+	import UserLists from "$lib/components/UserLists.svelte";
+	import CreateList from "$lib/components/CreateList.svelte";
+	import LoginForm from "$lib/components/LoginForm.svelte";
+	import { user, authReady } from "$lib/stores/user";
 </script>
 
 <svelte:head>
@@ -13,13 +13,16 @@
 </svelte:head>
 
 <section>
-	{#if !$user}
+	{#if !$authReady}
+		<p>Loading session...</p>
+	{:else if !$user}
 		<LoginForm />
 	{:else}
 		<CreateList />
 		<UserLists />
 	{/if}
 </section>
+
 <style>
 	section {
 		display: flex;
@@ -28,25 +31,4 @@
 		align-items: center;
 		flex: 0.6;
 	}
-
-	h1 {
-		width: 100%;
-	}
-
-	.welcome {
-		display: block;
-		position: relative;
-		width: 100%;
-		height: 0;
-		padding: 0 0 calc(100% * 495 / 2048) 0;
-	}
-
-	.welcome img {
-		position: absolute;
-		width: 100%;
-		height: 100%;
-		top: 0;
-		display: block;
-	}
-
 </style>

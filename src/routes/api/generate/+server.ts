@@ -1,6 +1,7 @@
 import type { RequestHandler } from '@sveltejs/kit';
 import { genkit } from 'genkit';
 import { googleAI, gemini } from '@genkit-ai/googleai';
+import { buildFullPrompt } from '$lib/ai/systemPrompt';
 
 export const GET: RequestHandler = async ({ request }) => {
     const url = new URL(request.url);
@@ -20,7 +21,7 @@ export const GET: RequestHandler = async ({ request }) => {
         model: gemini('gemini-1.5-flash'),
     });
 
-    const res = await ai.generate(prompt);
+    const res = await ai.generate(buildFullPrompt(prompt));
     console.log(res);
     return new Response(JSON.stringify({ title: res.text }), {
         headers: {

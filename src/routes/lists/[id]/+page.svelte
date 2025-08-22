@@ -14,6 +14,14 @@
   let newTask = '';
   let error = '';
   let channel: ReturnType<typeof supabase.channel> | null = null;
+  // --- suggestions modal state ---
+  let showSuggest = false;
+  let topic = '';
+  let generating = false;
+  let genError = '';
+  let suggestions: string[] = [];
+  let savingSuggestions = false;
+  // --- end suggestions modal state ---
   // --- invite state ---
   let ownerId: string | null = null;
   let inviteUserEmail = '';
@@ -153,6 +161,98 @@
     }
     inviting = false;
   }
+
+  // --- suggestions modal logic ---
+  function openSuggest() {
+    showSuggest = true;
+    topic = '';
+    suggestions = [];
+    genError = '';
+  }
+  function closeSuggest() {
+    if (savingSuggestions || generating) return; // avoid closing mid-action
+    showSuggest = false;
+  }
+  function onBackdropKeydown(e: KeyboardEvent) {
+    if (e.key === 'Escape' || e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      closeSuggest();
+    }
+  }
+  function onDialogKeydown(e: KeyboardEvent) {
+    if (e.key === 'Escape') {
+      e.stopPropagation();
+      e.preventDefault();
+      closeSuggest();
+    }
+  }
+  async function generateSuggestions() {
+    const q = topic.trim();
+    if (!q || generating) return;
+    genError = '';
+    generating = true;
+    suggestions = [];
+    try {
+      // Instruct the model to return only a comma-separated list
+      const res = await fetch(`/api/generate?prompt=${encodeURIComponent(`Suggest 6 short, actionable todo items related to "${q}". Return ONLY a single comma-separated list without numbering or extra text.`)}`);
+      const data = await res.json().catch(() => ({}));
+      const text: string = (data?.title ?? data?.text ?? '').toString();
+      if (!res.ok || !text) {
+        genError = data?.error || 'No suggestions returned';
+        return;
+      }
+      const parsed = text
+        .replace(/\n+/g, ',')
+        .split(',')
+        .map((s: string) => s.trim())
+        .filter(Boolean);
+      suggestions = Array.from(new Set(parsed));
+      if (suggestions.length === 0) genError = 'No suggestions parsed';
+    } catch (e: any) {
+      genError = e?.message || 'Failed to generate suggestions';
+    } finally {
+      generating = false;
+    }
+  }
+  function removeSuggestion(idx: number) {
+    suggestions = suggestions.filter((_, i) => i !== idx);
+  }
+  async function saveSuggestions() {
+    if (!suggestions.length || savingSuggestions) return;
+    savingSuggestions = true; error = '';
+    // optimistic insert for each suggestion
+    const temps = suggestions.map((task) => ({ id: crypto.randomUUID(), list_id: listId, task, completed: false, inserted_at: new Date().toISOString(), _pending: true }));
+    todos = [...temps, ...todos];
+    try {
+      const { data, error: err } = await supabase.from('todos').insert(
+        suggestions.map((task) => ({ list_id: listId, task }))
+      ).select();
+      if (err) {
+        error = err.message;
+        // remove temps on error
+        const tempIds = new Set(temps.map(t => t.id));
+        todos = todos.filter(t => !tempIds.has(t.id));
+      } else if (Array.isArray(data)) {
+        // replace temps with real rows by task match (best-effort)
+        const byTask = new Map<string, any[]>();
+        for (const row of data) {
+          const arr = byTask.get(row.task) || [];
+          arr.push(row);
+          byTask.set(row.task, arr);
+        }
+        todos = todos.map(t => {
+          if (!t._pending) return t;
+          const arr = byTask.get(t.task);
+          if (arr && arr.length) return arr.shift()!;
+          return t; // fallback; realtime may update it soon
+        });
+      }
+      showSuggest = false;
+    } finally {
+      savingSuggestions = false;
+    }
+  }
+  // --- end suggestions modal logic ---
 </script>
 
 <svelte:head><title>{listName ? listName + ' – Todos' : 'List'} </title></svelte:head>
@@ -169,7 +269,8 @@
   {/if}
   <form class="add" on:submit|preventDefault={addTodo}>
     <input placeholder="New todo" bind:value={newTask} aria-label="New todo" />
-    <button type="submit" disabled={!newTask.trim() || adding}>{adding ? 'Adding…' : 'Add'}</button>
+  <button type="submit" disabled={!newTask.trim() || adding}>{adding ? 'Adding…' : 'Add'}</button>
+  <button type="button" class="secondary" on:click={openSuggest}>Suggest…</button>
   </form>
   {#if error}<p class="error" role="alert">{error}</p>{/if}
   {#if loading}
@@ -189,6 +290,38 @@
       {/each}
     </ul>
   {/if}
+
+  {#if showSuggest}
+    <div class="modal-backdrop" role="button" tabindex="0" aria-label="Close suggestions modal" on:click|stopPropagation={closeSuggest} on:keydown={onBackdropKeydown}>
+      <div class="modal" role="dialog" aria-modal="true" aria-label="Generate suggestions" tabindex="0" on:click|stopPropagation on:keydown={onDialogKeydown}>
+        <header class="modal-header">
+          <h2>Generate suggestions</h2>
+          <button class="icon" title="Close" on:click={closeSuggest} disabled={generating || savingSuggestions}>✕</button>
+        </header>
+        <form class="generate" on:submit|preventDefault={generateSuggestions}>
+          <input placeholder="Topic (e.g., pie)" bind:value={topic} aria-label="Suggestion topic" />
+          <button type="submit" disabled={!topic.trim() || generating}>{generating ? 'Generating…' : 'Generate'}</button>
+        </form>
+        {#if genError}
+          <p class="error" role="alert">{genError}</p>
+        {/if}
+        {#if suggestions.length}
+          <ul class="suggestions">
+            {#each suggestions as s, i}
+              <li>
+                <span>{s}</span>
+                <button class="icon" title="Remove" on:click={() => removeSuggestion(i)}>✕</button>
+              </li>
+            {/each}
+          </ul>
+        {/if}
+        <footer class="modal-actions">
+          <button type="button" class="primary" on:click={saveSuggestions} disabled={!suggestions.length || savingSuggestions}>{savingSuggestions ? 'Saving…' : 'Save to list'}</button>
+          <button type="button" class="secondary" on:click={closeSuggest} disabled={savingSuggestions}>Cancel</button>
+        </footer>
+      </div>
+    </div>
+  {/if}
 </div>
 
 <style>
@@ -197,6 +330,7 @@
   form.add, form.invite { display: flex; gap: .5rem; }
   form.add input, form.invite input { flex:1; padding:.55rem .7rem; border:1px solid #bbb; border-radius:4px; }
   form.add button, form.invite button { padding:.55rem .9rem; border-radius:4px; border:1px solid var(--color-theme-1,#ff3e00); background: var(--color-theme-1,#ff3e00); color:#fff; font-weight:600; }
+  .secondary { background:#fff; color: var(--color-theme-1,#ff3e00); }
   ul.todos { list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap:.4rem; }
   ul.todos li { display:flex; align-items:center; gap:.6rem; padding:.5rem .6rem; border:1px solid #ddd; border-radius:6px; cursor:pointer; background:#fff; }
   ul.todos li.completed { opacity:.65; text-decoration: line-through; }
@@ -204,4 +338,17 @@
   .error { color:#d00; }
   .pending { font-size:.75rem; color:#888; margin-left:.25rem; }
   .invite-msg { font-size:.75rem; color:#555; margin-top:-.5rem; }
+
+  /* modal */
+  .modal-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,.35); display:flex; align-items:center; justify-content:center; padding:1rem; z-index: 1000; }
+  .modal { background:#fff; width: min(640px, 100%); border-radius: 8px; border:1px solid #ddd; box-shadow: 0 10px 30px rgba(0,0,0,.2); display:flex; flex-direction:column; gap:.75rem; padding:1rem; }
+  .modal-header { display:flex; align-items:center; justify-content:space-between; }
+  .modal-header h2 { margin:0; font-size:1.1rem; }
+  .icon { background:#f5f5f5; color:#333; border:1px solid #ccc; border-radius:6px; padding:.35rem .5rem; }
+  form.generate { display:flex; gap:.5rem; }
+  form.generate input { flex:1; padding:.5rem .7rem; border:1px solid #bbb; border-radius:4px; }
+  ul.suggestions { list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap:.4rem; max-height: 40vh; overflow:auto; }
+  ul.suggestions li { display:flex; align-items:center; justify-content:space-between; gap:.5rem; border:1px solid #eee; border-radius:6px; padding:.5rem .6rem; }
+  .modal-actions { display:flex; gap:.5rem; justify-content:flex-end; }
+  .primary { background: var(--color-theme-1,#ff3e00); color:#fff; border:1px solid var(--color-theme-1,#ff3e00); }
 </style>

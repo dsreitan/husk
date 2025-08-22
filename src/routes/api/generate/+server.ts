@@ -3,7 +3,7 @@ import { genkit } from 'genkit';
 import { googleAI, gemini } from '@genkit-ai/googleai';
 import { buildFullPrompt } from '$lib/ai/systemPrompt';
 
-export const GET: RequestHandler = async ({ request }) => {
+export const GET: RequestHandler = async ({ request, locals }) => {
     const url = new URL(request.url);
     const prompt = url.searchParams.get('prompt');
 
@@ -21,8 +21,8 @@ export const GET: RequestHandler = async ({ request }) => {
         model: gemini('gemini-1.5-flash'),
     });
 
-    const res = await ai.generate(buildFullPrompt(prompt));
-    console.log(res);
+    const res = await ai.generate(buildFullPrompt(prompt, locals.locale || 'nb'));
+
     return new Response(JSON.stringify({ title: res.text }), {
         headers: {
             'Content-Type': 'application/json'

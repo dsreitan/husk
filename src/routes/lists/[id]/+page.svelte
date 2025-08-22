@@ -5,6 +5,7 @@
   import { user } from '$lib/stores/user';
   import { get } from 'svelte/store';
   import { goto } from '$app/navigation';
+  import { t } from '$lib/i18n';
 
   let listId = '';
   let listName = '';
@@ -198,7 +199,7 @@
       const data = await res.json().catch(() => ({}));
       const text: string = (data?.title ?? data?.text ?? '').toString();
       if (!res.ok || !text) {
-        genError = data?.error || 'No suggestions returned';
+        genError = data?.error || t('suggest.error.none');
         return;
       }
       const parsed = text
@@ -206,10 +207,10 @@
         .split(',')
         .map((s: string) => s.trim())
         .filter(Boolean);
-      suggestions = Array.from(new Set(parsed));
-      if (suggestions.length === 0) genError = 'No suggestions parsed';
+  suggestions = Array.from(new Set(parsed));
+  if (suggestions.length === 0) genError = t('suggest.error.parse');
     } catch (e: any) {
-      genError = e?.message || 'Failed to generate suggestions';
+  genError = e?.message || t('suggest.error.failed');
     } finally {
       generating = false;
     }
@@ -258,33 +259,33 @@
 <svelte:head><title>{listName ? listName + ' – Todos' : 'List'} </title></svelte:head>
 
 <div class="list-page">
-  <nav class="crumbs"><a href="/">← Lists</a></nav>
+  <nav class="crumbs"><a href="/">{t('list.breadcrumb.back')}</a></nav>
   <h1>{listName || '...'}</h1>
   {#if ownerId && get(user)?.id === ownerId}
     <form class="invite" on:submit|preventDefault={invite}>
-      <input type="email" placeholder="User email" bind:value={inviteUserEmail} aria-label="User email to invite" />
-      <button type="submit" disabled={!inviteUserEmail.trim() || inviting}>{inviting ? 'Inviting…' : 'Invite'}</button>
+  <input type="email" placeholder={t('list.invite.placeholder')} bind:value={inviteUserEmail} aria-label="User email to invite" />
+  <button type="submit" disabled={!inviteUserEmail.trim() || inviting}>{inviting ? t('list.invite.submitting') : t('list.invite.submit')}</button>
     </form>
     {#if inviteMsg}<p class="invite-msg">{inviteMsg}</p>{/if}
   {/if}
   <form class="add" on:submit|preventDefault={addTodo}>
-    <input placeholder="New todo" bind:value={newTask} aria-label="New todo" />
-  <button type="submit" disabled={!newTask.trim() || adding}>{adding ? 'Adding…' : 'Add'}</button>
-  <button type="button" class="secondary" on:click={openSuggest}>Suggest…</button>
+    <input placeholder={t('todo.new.placeholder')} bind:value={newTask} aria-label="New todo" />
+  <button type="submit" disabled={!newTask.trim() || adding}>{adding ? t('todo.adding') : t('todo.add')}</button>
+  <button type="button" class="secondary" on:click={openSuggest}>{t('suggest.button')}</button>
   </form>
   {#if error}<p class="error" role="alert">{error}</p>{/if}
   {#if loading}
-    <p>Loading todos…</p>
+  <p>{t('todo.loading')}</p>
   {:else if todos.length === 0}
-    <p>No todos yet.</p>
+  <p>{t('todo.empty')}</p>
   {:else}
     <ul class="todos" aria-live="polite">
       {#each todos as todo (todo.id)}
         <li class:completed={todo.completed}>
-          <button type="button" class="todo-btn" on:click={() => toggle(todo)} title="Toggle complete">
+          <button type="button" class="todo-btn" on:click={() => toggle(todo)} title={t('todo.toggle.title')}>
             <input type="checkbox" checked={todo.completed} readonly />
             <span>{todo.task}</span>
-            {#if todo._pending}<em class="pending">(pending)</em>{/if}
+            {#if todo._pending}<em class="pending">{t('todo.pending')}</em>{/if}
           </button>
         </li>
       {/each}
@@ -293,14 +294,14 @@
 
   {#if showSuggest}
     <div class="modal-backdrop" role="button" tabindex="0" aria-label="Close suggestions modal" on:click|stopPropagation={closeSuggest} on:keydown={onBackdropKeydown}>
-      <div class="modal" role="dialog" aria-modal="true" aria-label="Generate suggestions" tabindex="0" on:click|stopPropagation on:keydown={onDialogKeydown}>
+      <div class="modal" role="dialog" aria-modal="true" aria-label={t('suggest.modal.title')} tabindex="0" on:click|stopPropagation on:keydown={onDialogKeydown}>
         <header class="modal-header">
-          <h2>Generate suggestions</h2>
-          <button class="icon" title="Close" on:click={closeSuggest} disabled={generating || savingSuggestions}>✕</button>
+          <h2>{t('suggest.modal.title')}</h2>
+          <button class="icon" title={t('suggest.modal.close')} on:click={closeSuggest} disabled={generating || savingSuggestions}>✕</button>
         </header>
         <form class="generate" on:submit|preventDefault={generateSuggestions}>
-          <input placeholder="Topic (e.g., pie)" bind:value={topic} aria-label="Suggestion topic" />
-          <button type="submit" disabled={!topic.trim() || generating}>{generating ? 'Generating…' : 'Generate'}</button>
+          <input placeholder={t('suggest.topic.placeholder')} bind:value={topic} aria-label="Suggestion topic" />
+          <button type="submit" disabled={!topic.trim() || generating}>{generating ? t('suggest.generating') : t('suggest.generate')}</button>
         </form>
         {#if genError}
           <p class="error" role="alert">{genError}</p>
@@ -310,14 +311,14 @@
             {#each suggestions as s, i}
               <li>
                 <span>{s}</span>
-                <button class="icon" title="Remove" on:click={() => removeSuggestion(i)}>✕</button>
+                <button class="icon" title={t('suggest.remove')} on:click={() => removeSuggestion(i)}>✕</button>
               </li>
             {/each}
           </ul>
         {/if}
         <footer class="modal-actions">
-          <button type="button" class="primary" on:click={saveSuggestions} disabled={!suggestions.length || savingSuggestions}>{savingSuggestions ? 'Saving…' : 'Save to list'}</button>
-          <button type="button" class="secondary" on:click={closeSuggest} disabled={savingSuggestions}>Cancel</button>
+          <button type="button" class="primary" on:click={saveSuggestions} disabled={!suggestions.length || savingSuggestions}>{savingSuggestions ? t('suggest.saving') : t('suggest.save')}</button>
+          <button type="button" class="secondary" on:click={closeSuggest} disabled={savingSuggestions}>{t('suggest.cancel')}</button>
         </footer>
       </div>
     </div>

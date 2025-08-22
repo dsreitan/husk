@@ -4,6 +4,7 @@
     import { user } from "$lib/stores/user";
     import { get } from "svelte/store";
     import { browser } from "$app/environment";
+    import { t, tn } from '$lib/i18n';
 
     type List = {
         id: string;
@@ -141,22 +142,22 @@
 </script>
 
 <div class="user-lists">
-    <h2>Your Lists</h2>
+    <h2>{t('lists.header')}</h2>
     {#if !$user}
-        <p>Sign in to view your lists.</p>
+        <p>{t('lists.signin.prompt')}</p>
     {:else if loading && !initialized}
-        <p>Loading...</p>
+        <p>{t('lists.loading')}</p>
     {:else if error}
         <p class="error">{error}</p>
     {:else if lists.length === 0}
-        <p>No lists yet.</p>
+        <p>{t('lists.empty')}</p>
     {:else}
         <ul class="lists" aria-live="polite">
             {#each lists as list (list.id)}
                 <li>
                     <a class="row" href={`/lists/${list.id}`}>
                         <span class="name">{list.name}</span>
-                        <span class="count">{list.todo_count ?? 0} { (list.todo_count ?? 0) === 1 ? 'todo' : 'todos' }</span>
+                        <span class="count">{tn('lists.count', list.todo_count ?? 0)}</span>
                     </a>
                 </li>
             {/each}

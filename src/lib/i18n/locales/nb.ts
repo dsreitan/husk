@@ -1,0 +1,46 @@
+export const messages = {
+  'app.home.title': 'Hjem',
+  'app.home.description': 'Svelte demoprogram',
+  'app.loading.session': 'Laster økt…',
+
+  'lists.header': 'Listene dine',
+  'lists.signin.prompt': 'Logg inn for å se listene dine.',
+  'lists.loading': 'Laster…',
+  'lists.empty': 'Ingen lister ennå.',
+  'lists.count.one': '{count} oppgave',
+  'lists.count.other': '{count} oppgaver',
+
+  'createList.placeholder': 'Nytt listenavn',
+  'createList.add': 'Legg til liste',
+  'createList.adding': 'Legger til…',
+  'createList.loginRequired': 'Du må være innlogget.',
+
+  'list.breadcrumb.back': '← Lister',
+  'list.invite.placeholder': 'E-postadresse',
+  'list.invite.submit': 'Inviter',
+  'list.invite.submitting': 'Inviterer…',
+  'list.invite.success': 'Invitert',
+  'list.invite.failed': 'Invitasjon mislyktes',
+
+  'todo.new.placeholder': 'Ny oppgave',
+  'todo.add': 'Legg til',
+  'todo.adding': 'Legger til…',
+  'todo.loading': 'Laster oppgaver…',
+  'todo.empty': 'Ingen oppgaver ennå.',
+  'todo.toggle.title': 'Bytt fullført',
+  'todo.pending': '(venter)',
+
+  'suggest.button': 'Foreslå…',
+  'suggest.modal.title': 'Generer forslag',
+  'suggest.modal.close': 'Lukk',
+  'suggest.topic.placeholder': 'Tema (f.eks. pai)',
+  'suggest.generate': 'Generer',
+  'suggest.generating': 'Genererer…',
+  'suggest.error.none': 'Ingen forslag returnert',
+  'suggest.error.parse': 'Ingen forslag tolket',
+  'suggest.error.failed': 'Klarte ikke å generere forslag',
+  'suggest.remove': 'Fjern',
+  'suggest.save': 'Lagre i liste',
+  'suggest.saving': 'Lagrer…',
+  'suggest.cancel': 'Avbryt'
+} as const;

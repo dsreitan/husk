@@ -3,6 +3,7 @@
   import { user } from '$lib/stores/user';
   import { get } from 'svelte/store';
   import { goto } from '$app/navigation';
+  import { t } from '$lib/i18n';
 
   let name = '';
   let error = '';
@@ -12,7 +13,7 @@
     error = '';
     const currentUser = get(user);
     if (!currentUser) {
-      error = 'You must be logged in.';
+  error = t('createList.loginRequired');
       return;
     }
     if (!name.trim()) return;
@@ -36,12 +37,12 @@
 <form class="create-list" on:submit={onSubmit} aria-label="Create new list">
   <input
     type="text"
-    placeholder="New list name"
+    placeholder={t('createList.placeholder')}
     bind:value={name}
     aria-disabled={loading}
     aria-label="List name"
   />
-  <button type="submit" disabled={loading || !name.trim()}>{loading ? 'Adding…' : 'Add List'}</button>
+  <button type="submit" disabled={loading || !name.trim()}>{loading ? t('createList.adding') : t('createList.add')}</button>
   {#if error}
     <p class="error" role="alert">{error}</p>
   {/if}

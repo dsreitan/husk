@@ -5,16 +5,17 @@
 	import CreateList from "$lib/components/CreateList.svelte";
 	import LoginForm from "$lib/components/LoginForm.svelte";
 	import { user, authReady } from "$lib/stores/user";
+  import { t } from '$lib/i18n';
 </script>
 
 <svelte:head>
-	<title>Home</title>
-	<meta name="description" content="Svelte demo app" />
+	<title>{t('app.home.title')}</title>
+	<meta name="description" content={t('app.home.description')} />
 </svelte:head>
 
 <section>
 	{#if !$authReady}
-		<p>Loading session...</p>
+		<p>{t('app.loading.session')}</p>
 	{:else if !$user}
 		<LoginForm />
 	{:else}

@@ -1,0 +1,46 @@
+export const messages = {
+  'app.home.title': 'Home',
+  'app.home.description': 'Svelte demo app',
+  'app.loading.session': 'Loading session...',
+
+  'lists.header': 'Your Lists',
+  'lists.signin.prompt': 'Sign in to view your lists.',
+  'lists.loading': 'Loading...',
+  'lists.empty': 'No lists yet.',
+  'lists.count.one': '{count} todo',
+  'lists.count.other': '{count} todos',
+
+  'createList.placeholder': 'New list name',
+  'createList.add': 'Add List',
+  'createList.adding': 'Adding…',
+  'createList.loginRequired': 'You must be logged in.',
+
+  'list.breadcrumb.back': '← Lists',
+  'list.invite.placeholder': 'User email',
+  'list.invite.submit': 'Invite',
+  'list.invite.submitting': 'Inviting…',
+  'list.invite.success': 'Invited',
+  'list.invite.failed': 'Invite failed',
+
+  'todo.new.placeholder': 'New todo',
+  'todo.add': 'Add',
+  'todo.adding': 'Adding…',
+  'todo.loading': 'Loading todos…',
+  'todo.empty': 'No todos yet.',
+  'todo.toggle.title': 'Toggle complete',
+  'todo.pending': '(pending)',
+
+  'suggest.button': 'Suggest…',
+  'suggest.modal.title': 'Generate suggestions',
+  'suggest.modal.close': 'Close',
+  'suggest.topic.placeholder': 'Topic (e.g., pie)',
+  'suggest.generate': 'Generate',
+  'suggest.generating': 'Generating…',
+  'suggest.error.none': 'No suggestions returned',
+  'suggest.error.parse': 'No suggestions parsed',
+  'suggest.error.failed': 'Failed to generate suggestions',
+  'suggest.remove': 'Remove',
+  'suggest.save': 'Save to list',
+  'suggest.saving': 'Saving…',
+  'suggest.cancel': 'Cancel'
+} as const;

@@ -32,7 +32,7 @@ export const messages = {
   'todo.completed.toggle.show': 'Show completed ({count})',
   'todo.completed.toggle.hide': 'Hide completed ({count})',
 
-  'suggest.button': 'Suggest…',
+  'suggest.button': '✨',
   'suggest.modal.title': 'Generate suggestions',
   'suggest.modal.close': 'Close',
   'suggest.topic.placeholder': 'Topic (e.g., pie)',

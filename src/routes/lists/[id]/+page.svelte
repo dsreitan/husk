@@ -182,7 +182,9 @@
     showSuggest = false;
   }
   function onBackdropKeydown(e: KeyboardEvent) {
-    if (e.key === 'Escape' || e.key === 'Enter' || e.key === ' ') {
+  // Only act if the backdrop itself has focus (not children)
+  if (e.target !== e.currentTarget) return;
+  if (e.key === 'Escape' || e.key === 'Enter' || e.key === ' ') {
       e.preventDefault();
       closeSuggest();
     }
@@ -268,13 +270,6 @@
 <div class="list-page">
   <nav class="crumbs"><a href="/">{t('list.breadcrumb.back')}</a></nav>
   <h1>{listName || '...'}</h1>
-  {#if ownerId && get(user)?.id === ownerId}
-    <form class="invite" on:submit|preventDefault={invite}>
-  <input type="email" placeholder={t('list.invite.placeholder')} bind:value={inviteUserEmail} aria-label="User email to invite" />
-  <button type="submit" disabled={!inviteUserEmail.trim() || inviting}>{inviting ? t('list.invite.submitting') : t('list.invite.submit')}</button>
-    </form>
-    {#if inviteMsg}<p class="invite-msg">{inviteMsg}</p>{/if}
-  {/if}
   <form class="add" on:submit|preventDefault={addTodo}>
     <input placeholder={t('todo.new.placeholder')} bind:value={newTask} aria-label="New todo" />
   <button type="submit" disabled={!newTask.trim() || adding}>{adding ? t('todo.adding') : t('todo.add')}</button>
@@ -319,9 +314,17 @@
     </ul>
   {/if}
 
+  {#if ownerId && get(user)?.id === ownerId}
+    <form class="invite" on:submit|preventDefault={invite}>
+  <input type="email" placeholder={t('list.invite.placeholder')} bind:value={inviteUserEmail} aria-label="User email to invite" />
+  <button type="submit" disabled={!inviteUserEmail.trim() || inviting}>{inviting ? t('list.invite.submitting') : t('list.invite.submit')}</button>
+    </form>
+    {#if inviteMsg}<p class="invite-msg">{inviteMsg}</p>{/if}
+  {/if}
+
   {#if showSuggest}
     <div class="modal-backdrop" role="button" tabindex="0" aria-label="Close suggestions modal" on:click|stopPropagation={closeSuggest} on:keydown={onBackdropKeydown}>
-      <div class="modal" role="dialog" aria-modal="true" aria-label={t('suggest.modal.title')} tabindex="0" on:click|stopPropagation on:keydown={onDialogKeydown}>
+      <div class="modal" role="dialog" aria-modal="true" aria-label={t('suggest.modal.title')} tabindex="0" on:click|stopPropagation on:keydown|stopPropagation={onDialogKeydown}>
         <header class="modal-header">
           <h2>{t('suggest.modal.title')}</h2>
           <button class="icon" title={t('suggest.modal.close')} on:click={closeSuggest} disabled={generating || savingSuggestions}>✕</button>

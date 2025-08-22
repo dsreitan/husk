@@ -29,6 +29,8 @@ export const messages = {
   'todo.empty': 'Ingen oppgaver ennå.',
   'todo.toggle.title': 'Bytt fullført',
   'todo.pending': '(venter)',
+  'todo.completed.toggle.show': 'Vis fullførte ({count})',
+  'todo.completed.toggle.hide': 'Skjul fullførte ({count})',
 
   'suggest.button': 'Foreslå…',
   'suggest.modal.title': 'Generer forslag',

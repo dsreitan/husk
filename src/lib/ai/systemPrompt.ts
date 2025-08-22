@@ -13,6 +13,7 @@ const baseSystemPrompt = `You are an expert on packing and grocery shopping.
 - Expect a word or sentence about packing or grocery shopping or meal prep.
 - Return suggestions for items to buy or remember.
 - Suggestions should be noun phrases, and not include verbs.
+- Capitalize the first letter of each suggestion.
 - Return suggestions in a comma-separated list.`;
 
 function getSystemPrompt(): string {

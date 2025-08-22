@@ -29,6 +29,8 @@ export const messages = {
   'todo.empty': 'No todos yet.',
   'todo.toggle.title': 'Toggle complete',
   'todo.pending': '(pending)',
+  'todo.completed.toggle.show': 'Show completed ({count})',
+  'todo.completed.toggle.hide': 'Hide completed ({count})',
 
   'suggest.button': 'Suggest…',
   'suggest.modal.title': 'Generate suggestions',

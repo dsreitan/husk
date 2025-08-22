@@ -15,6 +15,8 @@
   let newTask = '';
   let error = '';
   let channel: ReturnType<typeof supabase.channel> | null = null;
+  // grouping state
+  let showCompleted = true;
   // --- suggestions modal state ---
   let showSuggest = false;
   let topic = '';
@@ -78,6 +80,11 @@
       error = err.message;
     }
   }
+
+  // derived groupings
+  $: activeTodos = todos.filter(t => !t.completed);
+  $: completedTodos = todos.filter(t => t.completed);
+  function toggleCompletedVisibility() { showCompleted = !showCompleted; }
 
   // --- enhanced realtime ---
   function applyChange(payload: any) {
@@ -280,8 +287,8 @@
   <p>{t('todo.empty')}</p>
   {:else}
     <ul class="todos" aria-live="polite">
-      {#each todos as todo (todo.id)}
-        <li class:completed={todo.completed}>
+      {#each activeTodos as todo (todo.id)}
+        <li>
           <button type="button" class="todo-btn" on:click={() => toggle(todo)} title={t('todo.toggle.title')}>
             <input type="checkbox" checked={todo.completed} readonly />
             <span>{todo.task}</span>
@@ -289,6 +296,26 @@
           </button>
         </li>
       {/each}
+
+      {#if completedTodos.length}
+        <li class="divider" aria-hidden="false">
+          <button type="button" class="divider-btn" on:click={toggleCompletedVisibility} aria-expanded={showCompleted}>
+            {showCompleted ? t('todo.completed.toggle.hide', { count: completedTodos.length }) : t('todo.completed.toggle.show', { count: completedTodos.length })}
+          </button>
+        </li>
+
+        {#if showCompleted}
+          {#each completedTodos as todo (todo.id)}
+            <li class="completed">
+              <button type="button" class="todo-btn" on:click={() => toggle(todo)} title={t('todo.toggle.title')}>
+                <input type="checkbox" checked={todo.completed} readonly />
+                <span>{todo.task}</span>
+                {#if todo._pending}<em class="pending">{t('todo.pending')}</em>{/if}
+              </button>
+            </li>
+          {/each}
+        {/if}
+      {/if}
     </ul>
   {/if}
 
@@ -352,4 +379,8 @@
   ul.suggestions li { display:flex; align-items:center; justify-content:space-between; gap:.5rem; border:1px solid #eee; border-radius:6px; padding:.5rem .6rem; }
   .modal-actions { display:flex; gap:.5rem; justify-content:flex-end; }
   .primary { background: var(--color-theme-1,#ff3e00); color:#fff; border:1px solid var(--color-theme-1,#ff3e00); }
+
+  /* divider */
+  .divider { list-style:none; padding:0; margin:.5rem 0; border-top:1px dashed #ddd; display:flex; justify-content:center; }
+  .divider-btn { margin-top:.4rem; background:#f7f7f7; color:#333; border:1px solid #ddd; border-radius:999px; padding:.25rem .6rem; font-size:.85rem; }
 </style>

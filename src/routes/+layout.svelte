@@ -1,10 +1,8 @@
 <script lang="ts">
-	import { browser } from '$app/environment';
-	import { page } from '$app/stores';
-	import { webVitals } from '$lib/vitals';
-	import Header from './Header.svelte';
-	import '../app.css';
-	import { loadLocale } from '$lib/i18n';
+	import "../app.css";
+	import { page } from "$app/stores";
+	import { webVitals } from "$lib/vitals";
+	import { loadLocale } from "$lib/i18n";
 
 	let { data, children } = $props();
 
@@ -14,7 +12,7 @@
 			webVitals({
 				path: $page.url.pathname,
 				params: $page.params,
-				analyticsId: id as string
+				analyticsId: id as string,
 			});
 		}
 	});
@@ -28,19 +26,6 @@
 	});
 </script>
 
-	<!-- <Header /> -->
-	 <header>head</header>
-
-	<main>
-		{@render children()}
-	</main>
-
-	<footer>
-		foot
-		<div class="grid">
-  <div>1</div>
-  <div>2</div>
-  <div>3</div>
-  <div>4</div>
-</div>
-	</footer>
+<main class="container">
+	{@render children()}
+</main>

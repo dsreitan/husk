@@ -1,3 +1,7 @@
+a {
+	text-decoration: none;
+}
+
 .grid {
 	grid-column-gap: var(--pico-spacing);
 	grid-row-gap: var(--pico-spacing);

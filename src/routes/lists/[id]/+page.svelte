@@ -6,6 +6,9 @@
   import { get } from "svelte/store";
   import { goto } from "$app/navigation";
   import { t } from "$lib/i18n";
+  import ArrowLeft from "phosphor-svelte/lib/ArrowLeft";
+  import UserPlus from "phosphor-svelte/lib/UserPlus";
+  import Sparkle from "phosphor-svelte/lib/Sparkle";
 
   let listId = "";
   let listName = "";
@@ -319,7 +322,19 @@
 >
 
 <div>
-  <nav><a href="/">{t("list.breadcrumb.back")}</a></nav>
+  <nav>
+    <ul>
+      <li><a href="/"><ArrowLeft size="24" /></a></li>
+    </ul>
+    <ul>
+      <li>
+        <button class="outline"><UserPlus size="24" /></button>
+      </li>
+      <li>
+        <button class=""><Sparkle size="24" /></button>
+      </li>
+    </ul>
+  </nav>
   <h1>{listName || "..."}</h1>
   <form on:submit|preventDefault={addTodo}>
     <!-- svelte-ignore a11y_no_redundant_roles -->

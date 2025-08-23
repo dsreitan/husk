@@ -10,7 +10,7 @@ export const messages = {
   'lists.count.one': '{count} oppgave',
   'lists.count.other': '{count} oppgaver',
 
-  'createList.placeholder': 'Nytt listenavn',
+  'createList.placeholder': 'Ny liste',
   'createList.add': 'Legg til liste',
   'createList.adding': 'Legger til…',
   'createList.loginRequired': 'Du må være innlogget.',

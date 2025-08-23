@@ -37,6 +37,7 @@
 	"dependencies": {
 		"@genkit-ai/googleai": "^1.16.1",
 		"@supabase/supabase-js": "^2.55.0",
-		"genkit": "^1.16.1"
+		"genkit": "^1.16.1",
+		"phosphor-svelte": "^3.0.1"
 	}
 }

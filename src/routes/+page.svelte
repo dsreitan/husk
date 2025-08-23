@@ -19,7 +19,7 @@
 	{:else if !$user}
 		<LoginForm />
 	{:else}
-		<CreateList />
 		<UserLists />
+		<CreateList />
 	{/if}
 </section>

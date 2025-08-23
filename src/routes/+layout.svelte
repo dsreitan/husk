@@ -28,48 +28,19 @@
 	});
 </script>
 
-<div class="app">
 	<!-- <Header /> -->
+	 <header>head</header>
 
 	<main>
 		{@render children()}
 	</main>
 
 	<footer>
-	</footer>
+		foot
+		<div class="grid">
+  <div>1</div>
+  <div>2</div>
+  <div>3</div>
+  <div>4</div>
 </div>
-
-<style>
-	.app {
-		display: flex;
-		flex-direction: column;
-		min-height: 100vh;
-	}
-
-	main {
-		flex: 1;
-		display: flex;
-		flex-direction: column;
-		padding: 1rem;
-		width: 100%;
-		max-width: 64rem;
-		margin: 0 auto;
-		box-sizing: border-box;
-	}
-
-	footer {
-		display: flex;
-		flex-direction: column;
-		justify-content: center;
-		align-items: center;
-		padding: 12px;
-	}
-
-
-
-	@media (min-width: 480px) {
-		footer {
-			padding: 12px 0;
-		}
-	}
-</style>
+	</footer>

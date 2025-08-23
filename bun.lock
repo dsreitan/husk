@@ -10,8 +10,6 @@
       },
       "devDependencies": {
         "@eslint/compat": "^1.2.3",
-        "@fontsource/fira-mono": "^5.0.0",
-        "@neoconfetti/svelte": "^2.0.0",
         "@playwright/test": "^1.45.3",
         "@sveltejs/adapter-vercel": "^5.5.0",
         "@sveltejs/kit": "^2.9.0",
@@ -105,8 +103,6 @@
 
     "@eslint/plugin-kit": ["@eslint/plugin-kit@0.3.5", "", { "dependencies": { "@eslint/core": "^0.15.2", "levn": "^0.4.1" } }, "sha512-Z5kJ+wU3oA7MMIqVR9tyZRtjYPr4OC004Q4Rw7pgOKUOKkJfZ3O24nz3WYfGRpMDNmcOi3TwQOmgm7B7Tpii0w=="],
 
-    "@fontsource/fira-mono": ["@fontsource/fira-mono@5.2.6", "", {}, "sha512-6pyiGeFH+5DP5sICSwx5wu+9BlTEMTKki7bTppsEqXJysi1MiK82n6oSUaYkQWRLH51+DK7zv2JJsi82cOIS3g=="],
-
     "@genkit-ai/ai": ["@genkit-ai/ai@1.16.1", "", { "dependencies": { "@genkit-ai/core": "1.16.1", "@opentelemetry/api": "^1.9.0", "@types/node": "^20.11.19", "colorette": "^2.0.20", "dotprompt": "^1.1.1", "json5": "^2.2.3", "node-fetch": "^3.3.2", "partial-json": "^0.1.7", "uri-templates": "^0.2.0", "uuid": "^10.0.0" } }, "sha512-icoIBF4VBio0TUTxH3LFi5iq9tmDl8emyunVbpI7MJ8pbK2zVxzIws3wZyMDreHHvSN7Cw55ffb79TZVlLHLxQ=="],
 
     "@genkit-ai/core": ["@genkit-ai/core@1.16.1", "", { "dependencies": { "@opentelemetry/api": "^1.9.0", "@opentelemetry/context-async-hooks": "~1.25.0", "@opentelemetry/core": "~1.25.0", "@opentelemetry/sdk-metrics": "~1.25.0", "@opentelemetry/sdk-node": "^0.52.0", "@opentelemetry/sdk-trace-base": "~1.25.0", "@types/json-schema": "^7.0.15", "ajv": "^8.12.0", "ajv-formats": "^3.0.1", "async-mutex": "^0.5.0", "body-parser": "^1.20.3", "cors": "^2.8.5", "dotprompt": "^1.1.1", "express": "^4.21.0", "get-port": "^5.1.0", "json-schema": "^0.4.0", "zod": "^3.23.8", "zod-to-json-schema": "^3.22.4" } }, "sha512-I6gyibZtYdflil6hyc6zEb7u13WGeXBTxXwj9y7s+xji/qOlTMhyG1fcpILM1+lS0TwZ9lM6DNFlokJ7TZrpKw=="],
@@ -144,8 +140,6 @@
     "@js-sdsl/ordered-map": ["@js-sdsl/ordered-map@4.4.2", "", {}, "sha512-iUKgm52T8HOE/makSxjqoWhe95ZJA1/G1sYsGev2JDKUSS14KAgg1LHb+Ba+IPow0xflbnSkOsZcO08C7w1gYw=="],
 
     "@mapbox/node-pre-gyp": ["@mapbox/node-pre-gyp@2.0.0", "", { "dependencies": { "consola": "^3.2.3", "detect-libc": "^2.0.0", "https-proxy-agent": "^7.0.5", "node-fetch": "^2.6.7", "nopt": "^8.0.0", "semver": "^7.5.3", "tar": "^7.4.0" }, "bin": { "node-pre-gyp": "bin/node-pre-gyp" } }, "sha512-llMXd39jtP0HpQLVI37Bf1m2ADlEb35GYSh1SDSLsBhR+5iCxiNGlT31yqbNtVHygHAtMy6dWFERpU2JgufhPg=="],
-
-    "@neoconfetti/svelte": ["@neoconfetti/svelte@2.2.2", "", { "peerDependencies": { "svelte": "^3.0.0 || ^4.0.0 || ^5.0.0" } }, "sha512-E7xCFVEEm5Ctnj2udTJy1b9oaTvjz1zi1mYdEtE8rB5BVwq6kHisosDS+zdWN5PMfEMjtbsOV9Cl6tsNSAD1sA=="],
 
     "@nodelib/fs.scandir": ["@nodelib/fs.scandir@2.1.5", "", { "dependencies": { "@nodelib/fs.stat": "2.0.5", "run-parallel": "^1.1.9" } }, "sha512-vq24Bq3ym5HEQm2NKCr3yXDwjc7vTsEThRDnkp2DK9p1uqLR+DHurm/NOTo0KG7HYHU7eppKZj3MyqYuMBf62g=="],
 

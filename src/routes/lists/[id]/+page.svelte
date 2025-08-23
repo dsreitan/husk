@@ -1,102 +1,127 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
-  import { page } from '$app/stores';
-  import { supabase } from '$lib/supabase';
-  import { user } from '$lib/stores/user';
-  import { get } from 'svelte/store';
-  import { goto } from '$app/navigation';
-  import { t } from '$lib/i18n';
+  import { onMount } from "svelte";
+  import { page } from "$app/stores";
+  import { supabase } from "$lib/supabase";
+  import { user } from "$lib/stores/user";
+  import { get } from "svelte/store";
+  import { goto } from "$app/navigation";
+  import { t } from "$lib/i18n";
 
-  let listId = '';
-  let listName = '';
+  let listId = "";
+  let listName = "";
   let todos: any[] = [];
   let loading = true;
   let adding = false;
-  let newTask = '';
-  let error = '';
+  let newTask = "";
+  let error = "";
   let channel: ReturnType<typeof supabase.channel> | null = null;
   // grouping state
   let showCompleted = true;
   // --- suggestions modal state ---
   let showSuggest = false;
-  let topic = '';
+  let topic = "";
   let generating = false;
-  let genError = '';
+  let genError = "";
   let suggestions: string[] = [];
   let savingSuggestions = false;
   // --- end suggestions modal state ---
   // --- invite state ---
   let ownerId: string | null = null;
-  let inviteUserEmail = '';
+  let inviteUserEmail = "";
   let inviting = false;
-  let inviteMsg = '';
+  let inviteMsg = "";
   // --- end invite state ---
-  let realtimeStatus: string = '';
+  let realtimeStatus: string = "";
 
   async function loadList() {
-    error = '';
-    const { data, error: err } = await supabase.from('lists').select('*').eq('id', listId).single();
-    if (err) { error = err.message; return; }
+    error = "";
+    const { data, error: err } = await supabase
+      .from("lists")
+      .select("*")
+      .eq("id", listId)
+      .single();
+    if (err) {
+      error = err.message;
+      return;
+    }
     listName = data.name;
     ownerId = data.owner;
   }
 
   async function loadTodos() {
-    error = '';
+    error = "";
     loading = true;
     const { data, error: err } = await supabase
-      .from('todos')
-      .select('*')
-      .eq('list_id', listId)
-      .order('inserted_at', { ascending: false });
-    if (err) error = err.message; else todos = data || [];
+      .from("todos")
+      .select("*")
+      .eq("list_id", listId)
+      .order("inserted_at", { ascending: false });
+    if (err) error = err.message;
+    else todos = data || [];
     loading = false;
   }
 
   async function addTodo() {
     const task = newTask.trim();
     if (!task || adding) return;
-    adding = true; error = '';
+    adding = true;
+    error = "";
     const tempId = crypto.randomUUID();
-    const optimistic = { id: tempId, list_id: listId, task, completed: false, inserted_at: new Date().toISOString(), _pending: true };
+    const optimistic = {
+      id: tempId,
+      list_id: listId,
+      task,
+      completed: false,
+      inserted_at: new Date().toISOString(),
+      _pending: true,
+    };
     todos = [optimistic, ...todos];
-    const { error: err, data } = await supabase.from('todos').insert({ list_id: listId, task }).select().single();
+    const { error: err, data } = await supabase
+      .from("todos")
+      .insert({ list_id: listId, task })
+      .select()
+      .single();
     if (err) {
       error = err.message;
-      todos = todos.filter(t => t.id !== tempId);
+      todos = todos.filter((t) => t.id !== tempId);
     } else if (data) {
-      todos = todos.map(t => t.id === tempId ? data : t);
-      newTask='';
+      todos = todos.map((t) => (t.id === tempId ? data : t));
+      newTask = "";
     }
     adding = false;
   }
 
   async function toggle(todo: any) {
     const updated = { ...todo, completed: !todo.completed };
-    todos = todos.map(t => t.id === todo.id ? updated : t);
-    const { error: err } = await supabase.from('todos').update({ completed: updated.completed }).eq('id', todo.id);
+    todos = todos.map((t) => (t.id === todo.id ? updated : t));
+    const { error: err } = await supabase
+      .from("todos")
+      .update({ completed: updated.completed })
+      .eq("id", todo.id);
     if (err) {
-      todos = todos.map(t => t.id === todo.id ? todo : t);
+      todos = todos.map((t) => (t.id === todo.id ? todo : t));
       error = err.message;
     }
   }
 
   // derived groupings
-  $: activeTodos = todos.filter(t => !t.completed);
-  $: completedTodos = todos.filter(t => t.completed);
-  function toggleCompletedVisibility() { showCompleted = !showCompleted; }
+  $: activeTodos = todos.filter((t) => !t.completed);
+  $: completedTodos = todos.filter((t) => t.completed);
+  function toggleCompletedVisibility() {
+    showCompleted = !showCompleted;
+  }
 
   // --- enhanced realtime ---
   function applyChange(payload: any) {
-    if (payload.eventType === 'INSERT') {
+    if (payload.eventType === "INSERT") {
       const row = payload.new as any;
-      if (!todos.find(t => t.id === row.id)) todos = [row, ...todos];
-    } else if (payload.eventType === 'UPDATE') {
+      if (!todos.find((t) => t.id === row.id)) todos = [row, ...todos];
+    } else if (payload.eventType === "UPDATE") {
       const row = payload.new as any;
-      todos = todos.map(t => t.id === row.id ? row : t);
-    } else if (payload.eventType === 'DELETE') {
+      todos = todos.map((t) => (t.id === row.id ? row : t));
+    } else if (payload.eventType === "DELETE") {
       const row = payload.old as any;
-      todos = todos.filter(t => t.id !== row.id);
+      todos = todos.filter((t) => t.id !== row.id);
     }
   }
   async function setupRealtime() {
@@ -105,37 +130,50 @@
       supabase.removeChannel(channel);
       channel = null;
     }
-    realtimeStatus = 'subscribing';
-    channel = supabase
-      .channel(`todos-${listId}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'todos', filter: `list_id=eq.${listId}` }, applyChange);
+    realtimeStatus = "subscribing";
+    channel = supabase.channel(`todos-${listId}`).on(
+      "postgres_changes",
+      {
+        event: "*",
+        schema: "public",
+        table: "todos",
+        filter: `list_id=eq.${listId}`,
+      },
+      applyChange,
+    );
 
     // Wait for status
     await new Promise<void>((resolve) => {
       channel!.subscribe((status) => {
         realtimeStatus = status;
-        if (status === 'SUBSCRIBED') resolve();
-        if (status === 'CHANNEL_ERROR' || status === 'CLOSED') resolve();
+        if (status === "SUBSCRIBED") resolve();
+        if (status === "CHANNEL_ERROR" || status === "CLOSED") resolve();
       });
     });
   }
   // --- end enhanced realtime ---
 
-  function ensureAuth() { if (!get(user)) goto('/'); }
+  function ensureAuth() {
+    if (!get(user)) goto("/");
+  }
 
-  const unsubscribeUser = user.subscribe(u => {
+  const unsubscribeUser = user.subscribe((u) => {
     // re-auth channel if token changes (user login/logout)
     if (channel) setupRealtime();
   });
 
   onMount(() => {
-    listId = ($page.params.id || '') as string;
+    listId = ($page.params.id || "") as string;
     ensureAuth();
     loadList();
     loadTodos();
     setupRealtime();
-    window.addEventListener('focus', refetchOnFocus);
-    return () => { if (channel) supabase.removeChannel(channel); unsubscribeUser(); window.removeEventListener('focus', refetchOnFocus); };
+    window.addEventListener("focus", refetchOnFocus);
+    return () => {
+      if (channel) supabase.removeChannel(channel);
+      unsubscribeUser();
+      window.removeEventListener("focus", refetchOnFocus);
+    };
   });
 
   function refetchOnFocus() {
@@ -144,7 +182,7 @@
   }
 
   async function invite() {
-    inviteMsg = '';
+    inviteMsg = "";
     const email = inviteUserEmail.trim().toLowerCase();
     if (!email || inviting) return;
     inviting = true;
@@ -152,20 +190,20 @@
       const { data } = await supabase.auth.getSession();
       const accessToken = data.session?.access_token;
       const res = await fetch(`/lists/${listId}/invite`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
-          ...(accessToken ? { 'Authorization': `Bearer ${accessToken}` } : {})
+          "Content-Type": "application/json",
+          ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
         },
-        body: JSON.stringify({ email, role: 'viewer' })
+        body: JSON.stringify({ email, role: "viewer" }),
       });
       const result = await res.json();
-      if (!res.ok) inviteMsg = result.error || 'Invite failed';
+      if (!res.ok) inviteMsg = result.error || "Invite failed";
       else if (result.message) inviteMsg = result.message;
-      else inviteMsg = 'Invited';
-      if (res.ok) inviteUserEmail = '';
+      else inviteMsg = "Invited";
+      if (res.ok) inviteUserEmail = "";
     } catch (e: any) {
-      inviteMsg = e.message || 'Invite failed';
+      inviteMsg = e.message || "Invite failed";
     }
     inviting = false;
   }
@@ -173,24 +211,24 @@
   // --- suggestions modal logic ---
   function openSuggest() {
     showSuggest = true;
-    topic = '';
+    topic = "";
     suggestions = [];
-    genError = '';
+    genError = "";
   }
   function closeSuggest() {
     if (savingSuggestions || generating) return; // avoid closing mid-action
     showSuggest = false;
   }
   function onBackdropKeydown(e: KeyboardEvent) {
-  // Only act if the backdrop itself has focus (not children)
-  if (e.target !== e.currentTarget) return;
-  if (e.key === 'Escape' || e.key === 'Enter' || e.key === ' ') {
+    // Only act if the backdrop itself has focus (not children)
+    if (e.target !== e.currentTarget) return;
+    if (e.key === "Escape" || e.key === "Enter" || e.key === " ") {
       e.preventDefault();
       closeSuggest();
     }
   }
   function onDialogKeydown(e: KeyboardEvent) {
-    if (e.key === 'Escape') {
+    if (e.key === "Escape") {
       e.stopPropagation();
       e.preventDefault();
       closeSuggest();
@@ -199,27 +237,29 @@
   async function generateSuggestions() {
     const q = topic.trim();
     if (!q || generating) return;
-    genError = '';
+    genError = "";
     generating = true;
     suggestions = [];
     try {
       // Instruct the model to return only a comma-separated list
-      const res = await fetch(`/api/generate?prompt=${encodeURIComponent(`Suggest 6 short, actionable todo items related to "${q}". Return ONLY a single comma-separated list without numbering or extra text.`)}`);
+      const res = await fetch(
+        `/api/generate?prompt=${encodeURIComponent(`Suggest 6 short, actionable todo items related to "${q}". Return ONLY a single comma-separated list without numbering or extra text.`)}`,
+      );
       const data = await res.json().catch(() => ({}));
-      const text: string = (data?.title ?? data?.text ?? '').toString();
+      const text: string = (data?.title ?? data?.text ?? "").toString();
       if (!res.ok || !text) {
-        genError = data?.error || t('suggest.error.none');
+        genError = data?.error || t("suggest.error.none");
         return;
       }
       const parsed = text
-        .replace(/\n+/g, ',')
-        .split(',')
+        .replace(/\n+/g, ",")
+        .split(",")
         .map((s: string) => s.trim())
         .filter(Boolean);
-  suggestions = Array.from(new Set(parsed));
-  if (suggestions.length === 0) genError = t('suggest.error.parse');
+      suggestions = Array.from(new Set(parsed));
+      if (suggestions.length === 0) genError = t("suggest.error.parse");
     } catch (e: any) {
-  genError = e?.message || t('suggest.error.failed');
+      genError = e?.message || t("suggest.error.failed");
     } finally {
       generating = false;
     }
@@ -229,19 +269,28 @@
   }
   async function saveSuggestions() {
     if (!suggestions.length || savingSuggestions) return;
-    savingSuggestions = true; error = '';
+    savingSuggestions = true;
+    error = "";
     // optimistic insert for each suggestion
-    const temps = suggestions.map((task) => ({ id: crypto.randomUUID(), list_id: listId, task, completed: false, inserted_at: new Date().toISOString(), _pending: true }));
+    const temps = suggestions.map((task) => ({
+      id: crypto.randomUUID(),
+      list_id: listId,
+      task,
+      completed: false,
+      inserted_at: new Date().toISOString(),
+      _pending: true,
+    }));
     todos = [...temps, ...todos];
     try {
-      const { data, error: err } = await supabase.from('todos').insert(
-        suggestions.map((task) => ({ list_id: listId, task }))
-      ).select();
+      const { data, error: err } = await supabase
+        .from("todos")
+        .insert(suggestions.map((task) => ({ list_id: listId, task })))
+        .select();
       if (err) {
         error = err.message;
         // remove temps on error
-        const tempIds = new Set(temps.map(t => t.id));
-        todos = todos.filter(t => !tempIds.has(t.id));
+        const tempIds = new Set(temps.map((t) => t.id));
+        todos = todos.filter((t) => !tempIds.has(t.id));
       } else if (Array.isArray(data)) {
         // replace temps with real rows by task match (best-effort)
         const byTask = new Map<string, any[]>();
@@ -250,7 +299,7 @@
           arr.push(row);
           byTask.set(row.task, arr);
         }
-        todos = todos.map(t => {
+        todos = todos.map((t) => {
           if (!t._pending) return t;
           const arr = byTask.get(t.task);
           if (arr && arr.length) return arr.shift()!;
@@ -265,47 +314,78 @@
   // --- end suggestions modal logic ---
 </script>
 
-<svelte:head><title>{listName ? listName + ' – Todos' : 'List'} </title></svelte:head>
+<svelte:head
+  ><title>{listName ? listName + " – Todos" : "List"}</title></svelte:head
+>
 
-<div class="list-page">
-  <nav class="crumbs"><a href="/">{t('list.breadcrumb.back')}</a></nav>
-  <h1>{listName || '...'}</h1>
-  <form class="add" on:submit|preventDefault={addTodo}>
-    <input placeholder={t('todo.new.placeholder')} bind:value={newTask} aria-label="New todo" />
-  <button type="submit" disabled={!newTask.trim() || adding}>{adding ? t('todo.adding') : t('todo.add')}</button>
-  <button type="button" class="secondary" on:click={openSuggest}>{t('suggest.button')}</button>
+<div>
+  <nav><a href="/">{t("list.breadcrumb.back")}</a></nav>
+  <h1>{listName || "..."}</h1>
+  <form on:submit|preventDefault={addTodo}>
+    <!-- svelte-ignore a11y_no_redundant_roles -->
+    <fieldset role="group">
+      <input
+        placeholder={t("todo.new.placeholder")}
+        bind:value={newTask}
+        aria-label="New todo"
+      />
+      <input
+        type="submit"
+        disabled={!newTask.trim() || adding}
+        value={adding ? t("todo.adding") : t("todo.add")}
+      />
+      <input type="button" value={t("suggest.button")} on:click={openSuggest} />
+    </fieldset>
   </form>
-  {#if error}<p class="error" role="alert">{error}</p>{/if}
+  {#if error}<p role="alert">{error}</p>{/if}
   {#if loading}
-  <p>{t('todo.loading')}</p>
+    <p>{t("todo.loading")}</p>
   {:else if todos.length === 0}
-  <p>{t('todo.empty')}</p>
+    <p>{t("todo.empty")}</p>
   {:else}
-    <ul class="todos" aria-live="polite">
+    <ul aria-live="polite">
       {#each activeTodos as todo (todo.id)}
         <li>
-          <button type="button" class="todo-btn" on:click={() => toggle(todo)} title={t('todo.toggle.title')}>
+          <button
+            type="button"
+            on:click={() => toggle(todo)}
+            title={t("todo.toggle.title")}
+          >
             <input type="checkbox" checked={todo.completed} readonly />
             <span>{todo.task}</span>
-            {#if todo._pending}<em class="pending">{t('todo.pending')}</em>{/if}
+            {#if todo._pending}<em>{t("todo.pending")}</em>{/if}
           </button>
         </li>
       {/each}
 
       {#if completedTodos.length}
-        <li class="divider" aria-hidden="false">
-          <button type="button" class="divider-btn" on:click={toggleCompletedVisibility} aria-expanded={showCompleted}>
-            {showCompleted ? t('todo.completed.toggle.hide', { count: completedTodos.length }) : t('todo.completed.toggle.show', { count: completedTodos.length })}
+        <li aria-hidden="false">
+          <button
+            type="button"
+            on:click={toggleCompletedVisibility}
+            aria-expanded={showCompleted}
+          >
+            {showCompleted
+              ? t("todo.completed.toggle.hide", {
+                  count: completedTodos.length,
+                })
+              : t("todo.completed.toggle.show", {
+                  count: completedTodos.length,
+                })}
           </button>
         </li>
 
         {#if showCompleted}
           {#each completedTodos as todo (todo.id)}
-            <li class="completed">
-              <button type="button" class="todo-btn" on:click={() => toggle(todo)} title={t('todo.toggle.title')}>
+            <li>
+              <button
+                type="button"
+                on:click={() => toggle(todo)}
+                title={t("todo.toggle.title")}
+              >
                 <input type="checkbox" checked={todo.completed} readonly />
                 <span>{todo.task}</span>
-                {#if todo._pending}<em class="pending">{t('todo.pending')}</em>{/if}
+                {#if todo._pending}<em>{t("todo.pending")}</em>{/if}
               </button>
             </li>
           {/each}
@@ -315,75 +395,96 @@
   {/if}
 
   {#if ownerId && get(user)?.id === ownerId}
-    <form class="invite" on:submit|preventDefault={invite}>
-  <input type="email" placeholder={t('list.invite.placeholder')} bind:value={inviteUserEmail} aria-label="User email to invite" />
-  <button type="submit" disabled={!inviteUserEmail.trim() || inviting}>{inviting ? t('list.invite.submitting') : t('list.invite.submit')}</button>
+    <form on:submit|preventDefault={invite}>
+      <!-- svelte-ignore a11y_no_redundant_roles -->
+      <fieldset role="group">
+        <input
+          type="email"
+          name="email"
+          placeholder={t("list.invite.placeholder")}
+          bind:value={inviteUserEmail}
+          autocomplete="email"
+        />
+        <input
+          type="submit"
+          disabled={!inviteUserEmail.trim() || inviting}
+          value={inviting
+            ? t("list.invite.submitting")
+            : t("list.invite.submit")}
+        />
+      </fieldset>
     </form>
-    {#if inviteMsg}<p class="invite-msg">{inviteMsg}</p>{/if}
+    {#if inviteMsg}<p>{inviteMsg}</p>{/if}
   {/if}
 
   {#if showSuggest}
-    <div class="modal-backdrop" role="button" tabindex="0" aria-label="Close suggestions modal" on:click|stopPropagation={closeSuggest} on:keydown={onBackdropKeydown}>
-      <div class="modal" role="dialog" aria-modal="true" aria-label={t('suggest.modal.title')} tabindex="0" on:click|stopPropagation on:keydown|stopPropagation={onDialogKeydown}>
-        <header class="modal-header">
-          <h2>{t('suggest.modal.title')}</h2>
-          <button class="icon" title={t('suggest.modal.close')} on:click={closeSuggest} disabled={generating || savingSuggestions}>✕</button>
+    <div
+      role="button"
+      tabindex="0"
+      aria-label="Close suggestions modal"
+      on:click|stopPropagation={closeSuggest}
+      on:keydown={onBackdropKeydown}
+    >
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label={t("suggest.modal.title")}
+        tabindex="0"
+        on:click|stopPropagation
+        on:keydown|stopPropagation={onDialogKeydown}
+      >
+        <header>
+          <h2>{t("suggest.modal.title")}</h2>
+          <button
+            title={t("suggest.modal.close")}
+            on:click={closeSuggest}
+            disabled={generating || savingSuggestions}>✕</button
+          >
         </header>
-        <form class="generate" on:submit|preventDefault={generateSuggestions}>
-          <input placeholder={t('suggest.topic.placeholder')} bind:value={topic} aria-label="Suggestion topic" />
-          <button type="submit" disabled={!topic.trim() || generating}>{generating ? t('suggest.generating') : t('suggest.generate')}</button>
+        <form on:submit|preventDefault={generateSuggestions}>
+          <input
+            placeholder={t("suggest.topic.placeholder")}
+            bind:value={topic}
+            aria-label="Suggestion topic"
+          />
+          <button type="submit" disabled={!topic.trim() || generating}
+            >{generating
+              ? t("suggest.generating")
+              : t("suggest.generate")}</button
+          >
         </form>
         {#if genError}
-          <p class="error" role="alert">{genError}</p>
+          <p role="alert">{genError}</p>
         {/if}
         {#if suggestions.length}
-          <ul class="suggestions">
+          <ul>
             {#each suggestions as s, i}
               <li>
                 <span>{s}</span>
-                <button class="icon" title={t('suggest.remove')} on:click={() => removeSuggestion(i)}>✕</button>
+                <button
+                  title={t("suggest.remove")}
+                  on:click={() => removeSuggestion(i)}>✕</button
+                >
               </li>
             {/each}
           </ul>
         {/if}
-        <footer class="modal-actions">
-          <button type="button" class="primary" on:click={saveSuggestions} disabled={!suggestions.length || savingSuggestions}>{savingSuggestions ? t('suggest.saving') : t('suggest.save')}</button>
-          <button type="button" class="secondary" on:click={closeSuggest} disabled={savingSuggestions}>{t('suggest.cancel')}</button>
+        <footer>
+          <button
+            type="button"
+            on:click={saveSuggestions}
+            disabled={!suggestions.length || savingSuggestions}
+            >{savingSuggestions
+              ? t("suggest.saving")
+              : t("suggest.save")}</button
+          >
+          <button
+            type="button"
+            on:click={closeSuggest}
+            disabled={savingSuggestions}>{t("suggest.cancel")}</button
+          >
         </footer>
       </div>
     </div>
   {/if}
 </div>
-
-<style>
-  .list-page { max-width: 42rem; margin: 0 auto; display: flex; flex-direction: column; gap: 1rem; }
-  .crumbs a { text-decoration: none; font-size: .85rem; }
-  form.add, form.invite { display: flex; gap: .5rem; }
-  form.add input, form.invite input { flex:1; padding:.55rem .7rem; border:1px solid #bbb; border-radius:4px; }
-  form.add button, form.invite button { padding:.55rem .9rem; border-radius:4px; border:1px solid var(--color-theme-1,#ff3e00); background: var(--color-theme-1,#ff3e00); color:#fff; font-weight:600; }
-  .secondary { background:#fff; color: var(--color-theme-1,#ff3e00); }
-  ul.todos { list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap:.4rem; }
-  ul.todos li { display:flex; align-items:center; gap:.6rem; padding:.5rem .6rem; border:1px solid #ddd; border-radius:6px; cursor:pointer; background:#fff; }
-  ul.todos li.completed { opacity:.65; text-decoration: line-through; }
-  ul.todos li input { pointer-events:none; }
-  .error { color:#d00; }
-  .pending { font-size:.75rem; color:#888; margin-left:.25rem; }
-  .invite-msg { font-size:.75rem; color:#555; margin-top:-.5rem; }
-
-  /* modal */
-  .modal-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,.35); display:flex; align-items:center; justify-content:center; padding:1rem; z-index: 1000; }
-  .modal { background:#fff; width: min(640px, 100%); border-radius: 8px; border:1px solid #ddd; box-shadow: 0 10px 30px rgba(0,0,0,.2); display:flex; flex-direction:column; gap:.75rem; padding:1rem; }
-  .modal-header { display:flex; align-items:center; justify-content:space-between; }
-  .modal-header h2 { margin:0; font-size:1.1rem; }
-  .icon { background:#f5f5f5; color:#333; border:1px solid #ccc; border-radius:6px; padding:.35rem .5rem; }
-  form.generate { display:flex; gap:.5rem; }
-  form.generate input { flex:1; padding:.5rem .7rem; border:1px solid #bbb; border-radius:4px; }
-  ul.suggestions { list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap:.4rem; max-height: 40vh; overflow:auto; }
-  ul.suggestions li { display:flex; align-items:center; justify-content:space-between; gap:.5rem; border:1px solid #eee; border-radius:6px; padding:.5rem .6rem; }
-  .modal-actions { display:flex; gap:.5rem; justify-content:flex-end; }
-  .primary { background: var(--color-theme-1,#ff3e00); color:#fff; border:1px solid var(--color-theme-1,#ff3e00); }
-
-  /* divider */
-  .divider { list-style:none; padding:0; margin:.5rem 0; border-top:1px dashed #ddd; display:flex; justify-content:center; }
-  .divider-btn { margin-top:.4rem; background:#f7f7f7; color:#333; border:1px solid #ddd; border-radius:999px; padding:.25rem .6rem; font-size:.85rem; }
-</style>

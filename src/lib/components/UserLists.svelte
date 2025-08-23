@@ -141,23 +141,23 @@
     });
 </script>
 
-<div class="user-lists">
+<div>
     <h2>{t('lists.header')}</h2>
     {#if !$user}
         <p>{t('lists.signin.prompt')}</p>
     {:else if loading && !initialized}
         <p>{t('lists.loading')}</p>
     {:else if error}
-        <p class="error">{error}</p>
+        <p>{error}</p>
     {:else if lists.length === 0}
         <p>{t('lists.empty')}</p>
     {:else}
-        <ul class="lists" aria-live="polite">
+        <ul aria-live="polite">
             {#each lists as list (list.id)}
                 <li>
-                    <a class="row" href={`/lists/${list.id}`}>
-                        <span class="name">{list.name}</span>
-                        <span class="count">{tn('lists.count', list.todo_count ?? 0)}</span>
+                    <a href={`/lists/${list.id}`}>
+                        <span>{list.name}</span>
+                        <span>{tn('lists.count', list.todo_count ?? 0)}</span>
                     </a>
                 </li>
             {/each}
@@ -165,27 +165,3 @@
     {/if}
 </div>
 
-<style>
-    .user-lists {
-        width: 100%;
-        margin-top: 2rem;
-    }
-    .lists {
-        list-style: none;
-        padding: 0;
-        margin: 0;
-        display: flex;
-        flex-direction: column;
-        gap: 0.5rem;
-    }
-    .lists li { padding:0; }
-    .lists li .row { display:flex; justify-content:space-between; align-items:center; padding:0.6rem 0.75rem; border:1px solid #ccc; border-radius:6px; text-decoration:none; color:inherit; }
-    .lists li .row .count { font-size:.8rem; opacity:.75; }
-    .lists li .row:hover { background:#fafafa; }
-    .name {
-        font-weight: 500;
-    }
-    .error {
-        color: #d00;
-    }
-</style>

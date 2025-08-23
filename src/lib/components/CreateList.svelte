@@ -34,7 +34,7 @@
   }
 </script>
 
-<form class="create-list" on:submit={onSubmit} aria-label="Create new list">
+<form on:submit={onSubmit} aria-label="Create new list">
   <input
     type="text"
     placeholder={t('createList.placeholder')}
@@ -44,14 +44,7 @@
   />
   <button type="submit" disabled={loading || !name.trim()}>{loading ? t('createList.adding') : t('createList.add')}</button>
   {#if error}
-    <p class="error" role="alert">{error}</p>
+    <p role="alert">{error}</p>
   {/if}
 </form>
 
-<style>
-  .create-list { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: 2rem; width: 100%; }
-  input { flex: 1 1 240px; padding: .5rem .6rem; border: 1px solid #bbb; border-radius: 4px; }
-  button { padding: .55rem .9rem; border-radius: 4px; border: 1px solid var(--color-theme-1, #ff3e00); background: var(--color-theme-1, #ff3e00); color: #fff; font-weight: 600; cursor: pointer; }
-  button[disabled] { opacity: .6; cursor: not-allowed; }
-  .error { width: 100%; color: #d00; font-size: .85rem; margin: 0; }
-</style>

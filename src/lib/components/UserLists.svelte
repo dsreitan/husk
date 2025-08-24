@@ -4,7 +4,6 @@
     import { user } from "$lib/stores/user";
     import { get } from "svelte/store";
     import { browser } from "$app/environment";
-    import { t, tn } from "$lib/i18n";
 
     type List = {
         id: string;
@@ -190,15 +189,15 @@
 </script>
 
 <div>
-    <h2>{t("lists.header")}</h2>
+    <h2>Listene dine</h2>
     {#if !$user}
-        <p>{t("lists.signin.prompt")}</p>
+    <p>Logg inn for å se listene dine.</p>
     {:else if loading && !initialized}
-        <p>{t("lists.loading")}</p>
+    <p>Laster…</p>
     {:else if error}
         <p>{error}</p>
     {:else if lists.length === 0}
-        <p>{t("lists.empty")}</p>
+    <p>Ingen lister ennå.</p>
     {:else}
         <div role="list" aria-live="polite">
             {#each lists as list (list.id)}

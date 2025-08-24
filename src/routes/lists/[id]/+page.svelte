@@ -5,7 +5,6 @@
   import { user } from "$lib/stores/user";
   import { get } from "svelte/store";
   import { goto } from "$app/navigation";
-  import { t } from "$lib/i18n";
   import ArrowLeft from "phosphor-svelte/lib/ArrowLeft";
   import UserPlus from "phosphor-svelte/lib/UserPlus";
   import Sparkle from "phosphor-svelte/lib/Sparkle";
@@ -251,7 +250,7 @@
       const data = await res.json().catch(() => ({}));
       const text: string = (data?.title ?? data?.text ?? "").toString();
       if (!res.ok || !text) {
-        genError = data?.error || t("suggest.error.none");
+        genError = data?.error || "Ingen forslag";
         return;
       }
       const parsed = text
@@ -260,9 +259,9 @@
         .map((s: string) => s.trim())
         .filter(Boolean);
       suggestions = Array.from(new Set(parsed));
-      if (suggestions.length === 0) genError = t("suggest.error.parse");
+      if (suggestions.length === 0) genError = "Ingen forslag";
     } catch (e: any) {
-      genError = e?.message || t("suggest.error.failed");
+      genError = e?.message || "Feil under generering";
     } finally {
       generating = false;
     }
@@ -340,23 +339,23 @@
     <!-- svelte-ignore a11y_no_redundant_roles -->
     <fieldset role="group">
       <input
-        placeholder={t("todo.new.placeholder")}
+        placeholder="Ny oppgave"
         bind:value={newTask}
-        aria-label="New todo"
+        aria-label="Ny oppgave"
       />
       <input
         type="submit"
         disabled={!newTask.trim() || adding}
-        value={adding ? t("todo.adding") : t("todo.add")}
+        value={adding ? "Legger til…" : "+"}
       />
-      <input type="button" value={t("suggest.button")} on:click={openSuggest} />
+      <input type="button" value="✨" on:click={openSuggest} />
     </fieldset>
   </form>
   {#if error}<p role="alert">{error}</p>{/if}
   {#if loading}
-    <p>{t("todo.loading")}</p>
+    <p>Laster oppgaver…</p>
   {:else if todos.length === 0}
-    <p>{t("todo.empty")}</p>
+    <p>Ingen oppgaver ennå.</p>
   {:else}
     <ul aria-live="polite">
       {#each activeTodos as todo (todo.id)}
@@ -364,11 +363,11 @@
           <button
             type="button"
             on:click={() => toggle(todo)}
-            title={t("todo.toggle.title")}
+            title="Bytt fullført"
           >
             <input type="checkbox" checked={todo.completed} readonly />
             <span>{todo.task}</span>
-            {#if todo._pending}<em>{t("todo.pending")}</em>{/if}
+            {#if todo._pending}<em>(venter)</em>{/if}
           </button>
         </li>
       {/each}
@@ -381,12 +380,8 @@
             aria-expanded={showCompleted}
           >
             {showCompleted
-              ? t("todo.completed.toggle.hide", {
-                  count: completedTodos.length,
-                })
-              : t("todo.completed.toggle.show", {
-                  count: completedTodos.length,
-                })}
+              ? `Skjul fullførte (${completedTodos.length})`
+              : `Vis fullførte (${completedTodos.length})`}
           </button>
         </li>
 
@@ -396,11 +391,11 @@
               <button
                 type="button"
                 on:click={() => toggle(todo)}
-                title={t("todo.toggle.title")}
+                title="Bytt fullført"
               >
                 <input type="checkbox" checked={todo.completed} readonly />
                 <span>{todo.task}</span>
-                {#if todo._pending}<em>{t("todo.pending")}</em>{/if}
+                {#if todo._pending}<em>Laster</em>{/if}
               </button>
             </li>
           {/each}
@@ -416,16 +411,14 @@
         <input
           type="email"
           name="email"
-          placeholder={t("list.invite.placeholder")}
+          placeholder="E-postadresse til en venn"
           bind:value={inviteUserEmail}
           autocomplete="email"
         />
         <input
           type="submit"
           disabled={!inviteUserEmail.trim() || inviting}
-          value={inviting
-            ? t("list.invite.submitting")
-            : t("list.invite.submit")}
+          value={inviting ? "Inviterer…" : "Inviter"}
         />
       </fieldset>
     </form>
@@ -443,42 +436,39 @@
       <div
         role="dialog"
         aria-modal="true"
-        aria-label={t("suggest.modal.title")}
+        aria-label="Generer forslag"
         tabindex="0"
         on:click|stopPropagation
         on:keydown|stopPropagation={onDialogKeydown}
       >
         <header>
-          <h2>{t("suggest.modal.title")}</h2>
+          <h2>Generer forslag</h2>
           <button
-            title={t("suggest.modal.close")}
+            title="Lukk"
             on:click={closeSuggest}
             disabled={generating || savingSuggestions}>✕</button
           >
         </header>
         <form on:submit|preventDefault={generateSuggestions}>
           <input
-            placeholder={t("suggest.topic.placeholder")}
+            placeholder="f.eks. tilbehør til fisk"
             bind:value={topic}
             aria-label="Suggestion topic"
           />
           <button type="submit" disabled={!topic.trim() || generating}
-            >{generating
-              ? t("suggest.generating")
-              : t("suggest.generate")}</button
+            >{generating ? "Genererer…" : "Generer"}</button
           >
         </form>
         {#if genError}
-          <p role="alert">{genError}</p>
+          <p role="alert">{genError || "Ingen forslag returnert"}</p>
         {/if}
         {#if suggestions.length}
           <ul>
             {#each suggestions as s, i}
               <li>
                 <span>{s}</span>
-                <button
-                  title={t("suggest.remove")}
-                  on:click={() => removeSuggestion(i)}>✕</button
+                <button title="Fjern" on:click={() => removeSuggestion(i)}
+                  >✕</button
                 >
               </li>
             {/each}
@@ -489,14 +479,12 @@
             type="button"
             on:click={saveSuggestions}
             disabled={!suggestions.length || savingSuggestions}
-            >{savingSuggestions
-              ? t("suggest.saving")
-              : t("suggest.save")}</button
+            >{savingSuggestions ? "Lagrer…" : "Lagre i liste"}</button
           >
           <button
             type="button"
             on:click={closeSuggest}
-            disabled={savingSuggestions}>{t("suggest.cancel")}</button
+            disabled={savingSuggestions}>Avbryt</button
           >
         </footer>
       </div>

@@ -3,7 +3,6 @@
   import { user } from "$lib/stores/user";
   import { get } from "svelte/store";
   import { goto } from "$app/navigation";
-  import { t } from "$lib/i18n";
 
   let name = "";
   let error = "";
@@ -13,7 +12,7 @@
     error = "";
     const currentUser = get(user);
     if (!currentUser) {
-      error = t("createList.loginRequired");
+  error = "Du må være innlogget.";
       return;
     }
     if (!name.trim()) return;
@@ -42,14 +41,14 @@
   <fieldset role="group">
     <input
       type="text"
-      placeholder={t("createList.placeholder")}
+  placeholder="Ny liste"
       bind:value={name}
       aria-disabled={loading}
       aria-label="List name"
     />
     <input
       type="submit"
-      value={loading ? t("createList.adding") : t("createList.add")}
+  value={loading ? "Legger til…" : "Legg til liste"}
       disabled={loading || !name.trim()}
     />
     {#if error}

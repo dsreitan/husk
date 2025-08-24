@@ -44,18 +44,40 @@
 
   function onBackdropClick() {
     if (inviting) return;
+    open = false; // update parent via bind:open
     dispatch('close');
   }
 
   function stop(e: Event) { e.stopPropagation(); }
 </script>
 
+<dialog open>
+  <article>
+    <header>
+        <p>
+            <strong>🗓️ Thank You for Registering!</strong>
+        </p>
+        <button aria-label="Close" rel="prev"></button>
+    </header>
+    <p>
+      We're excited to have you join us for our
+      upcoming event. Please arrive at the museum 
+      on time to check in and get started.
+    </p>
+    <ul>
+      <li>Date: Saturday, April 15</li>
+      <li>Time: 10:00am - 12:00pm</li>
+    </ul>
+  </article>
+</dialog>
+
+
 {#if open}
   <div role="button" tabindex="0" aria-label="Lukk invitasjonsmodal" on:click={onBackdropClick}>
     <div role="dialog" aria-modal="true" aria-label="Inviter venn" tabindex="0" on:click|stopPropagation={stop}>
       <header>
         <h2>Inviter venn</h2>
-        <button title="Lukk" on:click={() => dispatch('close')} disabled={inviting}>✕</button>
+  <button title="Lukk" on:click={() => { open = false; dispatch('close'); }} disabled={inviting}>✕</button>
       </header>
       <form on:submit|preventDefault={invite}>
         <input type="email" placeholder="E-postadresse til en venn" bind:value={email} autocomplete="email" />

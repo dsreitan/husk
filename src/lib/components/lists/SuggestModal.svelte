@@ -20,9 +20,10 @@
   }
 
   function close() {
-    if (saving || generating) return;
-    dispatch('close');
-    reset();
+  if (saving || generating) return;
+  open = false; // update parent via bind:open
+  dispatch('close');
+  reset();
   }
 
   function onBackdropKeydown(e: KeyboardEvent) {

@@ -1,25 +1,26 @@
 <script lang="ts">
-  import { supabase } from '$lib/supabase';
-  import { user } from '$lib/stores/user';
+  import { supabase } from "$lib/supabase";
+  import { user } from "$lib/stores/user";
 
-  let email = '';
-  let password = '';
+  let email = "";
+  let password = "";
   let loading = false;
-  let error = '';
-  let mode: 'login' | 'signup' = 'login';
+  let error = "";
+  let mode: "login" | "signup" = "login";
 
   async function submit() {
-    error = '';
+    error = "";
     loading = true;
     const creds = { email: email.trim(), password };
     if (!creds.email || !creds.password) {
-      error = 'Email and password required';
+      error = "E-post og passord er påkrevd";
       loading = false;
       return;
     }
-    const { error: authError } = mode === 'login'
-      ? await supabase.auth.signInWithPassword(creds)
-      : await supabase.auth.signUp(creds);
+    const { error: authError } =
+      mode === "login"
+        ? await supabase.auth.signInWithPassword(creds)
+        : await supabase.auth.signUp(creds);
     if (authError) error = authError.message;
     loading = false;
   }
@@ -30,32 +31,33 @@
 </script>
 
 {#if !$user}
-  <form on:submit|preventDefault={submit} aria-label="Auth form">
-    <h2>{mode === 'login' ? 'Log in' : 'Sign up'}</h2>
-    <input
-      type="email"
-      placeholder="Email"
-      bind:value={email}
-      autocomplete="email"
-      required
-    />
-    <input
-      type="password"
-      placeholder="Password"
-      bind:value={password}
-      autocomplete={mode === 'signup' ? 'new-password' : 'current-password'}
-      minlength={6}
-      required
-    />
-  {#if error}<p role="alert">{error}</p>{/if}
-    <button type="submit" disabled={loading}>{loading ? 'Please wait…' : (mode === 'login' ? 'Log in' : 'Create account')}</button>
-    <button type="button" on:click={() => mode = mode === 'login' ? 'signup' : 'login'} disabled={loading}>
-      {mode === 'login' ? 'Need an account? Sign up' : 'Have an account? Log in'}
-    </button>
+  <form on:submit|preventDefault={submit} aria-label="Innlogging">
+    <fieldset>
+      <label>
+        E-post
+        <input type="email" bind:value={email} autocomplete="email" required />
+      </label>
+      <label>
+        Passord
+        <input
+          name="password"
+          type="password"
+          bind:value={password}
+          autocomplete={"current-password"}
+          minlength={6}
+          required
+        />
+      </label>
+      {#if error}<span role="alert">{error}</span>{/if}
+    </fieldset>
+
+    <button type="submit" disabled={loading}
+      >{loading ? "Vennligst vent…" : "Logg inn"}</button
+    >
   </form>
+  <p>Ingen signup. Spør Dagfinn om invite.</p>
 {:else}
   <div>
-    <button type="button" on:click={logout}>Log out</button>
+    <button type="button" on:click={logout}>Logg ut</button>
   </div>
 {/if}
-

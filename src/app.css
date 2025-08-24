@@ -1,3 +1,7 @@
 a {
 	text-decoration: none;
 }
+
+[role=alert] {
+	color: var(--pico-del-color);
+}

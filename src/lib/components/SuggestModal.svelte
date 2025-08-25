@@ -1,7 +1,7 @@
 <script lang="ts">
   import { createEventDispatcher } from "svelte";
   import { supabase } from "$lib/supabase";
-  import Modal from "./Modal.svelte";
+  import Modal from "../Modal.svelte";
 
   export let listId: string;
   export let open = false;

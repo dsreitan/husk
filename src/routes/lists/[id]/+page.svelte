@@ -8,10 +8,10 @@
   import ArrowLeft from "phosphor-svelte/lib/ArrowLeft";
   import UserPlus from "phosphor-svelte/lib/UserPlus";
   import Sparkle from "phosphor-svelte/lib/Sparkle";
-  import NewTodo from "$lib/components/lists/NewTodo.svelte";
-  import TodoList from "$lib/components/lists/TodoList.svelte";
-  import SuggestModal from "$lib/components/lists/SuggestModal.svelte";
-  import ShareListModal from "$lib/components/lists/ShareListModal.svelte";
+  import NewTodo from "$lib/components/NewTodo.svelte";
+  import TodoList from "$lib/components/TodoList.svelte";
+  import SuggestModal from "$lib/components/SuggestModal.svelte";
+  import ShareListModal from "$lib/components/ShareListModal.svelte";
 
   let listId = "";
   let listName = "";

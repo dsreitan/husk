@@ -10,8 +10,8 @@
   import Sparkle from "phosphor-svelte/lib/Sparkle";
   import NewTodo from "$lib/components/lists/NewTodo.svelte";
   import TodoList from "$lib/components/lists/TodoList.svelte";
-  import InviteFriendModal from "$lib/components/lists/InviteFriendModal.svelte";
   import SuggestModal from "$lib/components/lists/SuggestModal.svelte";
+  import ShareListModal from "$lib/components/lists/ShareListModal.svelte";
 
   let listId = "";
   let listName = "";
@@ -163,29 +163,29 @@
     </ul>
     <ul>
       <li>
-        <button class="outline"><UserPlus size="24" /></button>
+        <button class="outline" on:click={() => (showInvite = true)}>
+          <UserPlus size="24" />
+        </button>
       </li>
       <li>
-        <button class=""><Sparkle size="24" /></button>
+        <button class="primary" on:click={() => (showSuggest = true)}>
+          <Sparkle size="24" />
+        </button>
       </li>
     </ul>
   </nav>
+
   <h1>{listName || "..."}</h1>
-  <NewTodo listId={listId} on:added={onTodoAdded} on:error={onTodoAddError} />
-  <button type="button" on:click={() => (showSuggest = true)}>✨</button>
+
+  <NewTodo {listId} on:added={onTodoAdded} on:error={onTodoAddError} />
+
   {#if error}<p role="alert">{error}</p>{/if}
   {#if loading}
     <p>Laster oppgaver…</p>
   {:else}
-    <TodoList bind:todos={todos} />
+    <TodoList bind:todos />
   {/if}
 
-  {#if ownerId && get(user)?.id === ownerId}
-    <button type="button" class="outline" on:click={() => (showInvite = true)}>
-      <UserPlus size="24" />
-    </button>
-  {/if}
-
-  <InviteFriendModal listId={listId} bind:open={showInvite} on:invited={onInvited} />
-  <SuggestModal listId={listId} bind:open={showSuggest} on:saved={onSuggestSaved} />
+  <ShareListModal {listId} bind:open={showInvite} on:invited={onInvited} />
+  <SuggestModal {listId} bind:open={showSuggest} on:saved={onSuggestSaved} />
 </div>
